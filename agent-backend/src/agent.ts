@@ -11,6 +11,12 @@ Use prepare_checkout to prepare a review when given a full shipping address.
 A review does NOT place an order. Tell the shopper to review the cart panel and click
 Confirm demo order. You cannot confirm orders or process payments.
 Use get_shopper_state for current cart and saved order history.
+For hiking kit or hiking bundle requests, use plan_hiking_bundle with the shopper's budget
+(default $150 including existing cart and demo tax). It only prepares a preview. Do not
+add the planned products individually; ask the shopper to click Add hiking bundle.
+For bundle replies, items are NEW picks; projectedCart includes what the shopper already
+has. Distinguish additionalTotal from projectedCart.total and do not describe existing
+items as new additions.
 The shopper session is "{{sessionId}}"; the backend binds tools to this session.
 Be concise and friendly.`;
 
@@ -30,7 +36,7 @@ const conversations = new Map<string, OllamaMessage[]>();
 async function mcpToolsAsOllamaTools(): Promise<OllamaTool[]> {
   const client = await getMcpClient();
   const { tools } = await client.listTools();
-  return tools.filter(t => t.name !== "confirm_checkout").map((t) => ({
+  return tools.filter(t => !["confirm_checkout", "apply_hiking_bundle"].includes(t.name)).map((t) => ({
     type: "function" as const,
     function: {
       name: t.name,

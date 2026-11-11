@@ -3,7 +3,11 @@
     "id": "p001",
     "name": "Aurora Wireless Headphones",
     "category": "electronics",
-    "tags": ["audio", "wireless", "noise-cancelling"],
+    "tags": [
+      "audio",
+      "wireless",
+      "noise-cancelling"
+    ],
     "price": 129.99,
     "rating": 4.6,
     "stock": 42,
@@ -13,7 +17,11 @@
     "id": "p002",
     "name": "Pulse Fitness Tracker",
     "category": "electronics",
-    "tags": ["fitness", "wearable", "health"],
+    "tags": [
+      "fitness",
+      "wearable",
+      "health"
+    ],
     "price": 59.99,
     "rating": 4.2,
     "stock": 120,
@@ -23,7 +31,11 @@
     "id": "p003",
     "name": "Summit Trail Backpack",
     "category": "outdoors",
-    "tags": ["hiking", "travel", "backpack"],
+    "tags": [
+      "hiking",
+      "travel",
+      "backpack"
+    ],
     "price": 89.5,
     "rating": 4.8,
     "stock": 15,
@@ -33,8 +45,12 @@
     "id": "p004",
     "name": "Nimbus Insulated Water Bottle",
     "category": "outdoors",
-    "tags": ["hydration", "travel", "eco"],
-    "price": 24.0,
+    "tags": [
+      "hydration",
+      "travel",
+      "eco"
+    ],
+    "price": 24,
     "rating": 4.5,
     "stock": 200,
     "description": "Stainless-steel bottle that keeps drinks cold for 24 hours."
@@ -43,7 +59,11 @@
     "id": "p005",
     "name": "Lumen Desk Lamp",
     "category": "home",
-    "tags": ["lighting", "office", "led"],
+    "tags": [
+      "lighting",
+      "office",
+      "led"
+    ],
     "price": 39.99,
     "rating": 4.3,
     "stock": 75,
@@ -53,8 +73,12 @@
     "id": "p006",
     "name": "Cedar & Sage Candle Set",
     "category": "home",
-    "tags": ["decor", "fragrance", "gift"],
-    "price": 32.0,
+    "tags": [
+      "decor",
+      "fragrance",
+      "gift"
+    ],
+    "price": 32,
     "rating": 4.7,
     "stock": 0,
     "description": "Set of three soy wax candles with woodsy, calming scents."
@@ -63,8 +87,12 @@
     "id": "p007",
     "name": "Velocity Running Shoes",
     "category": "apparel",
-    "tags": ["running", "shoes", "sport"],
-    "price": 110.0,
+    "tags": [
+      "running",
+      "shoes",
+      "sport"
+    ],
+    "price": 110,
     "rating": 4.4,
     "stock": 60,
     "description": "Breathable mesh running shoes with responsive cushioning."
@@ -73,10 +101,489 @@
     "id": "p008",
     "name": "Drift Mechanical Keyboard",
     "category": "electronics",
-    "tags": ["keyboard", "office", "gaming"],
-    "price": 99.0,
+    "tags": [
+      "keyboard",
+      "office",
+      "gaming"
+    ],
+    "price": 99,
     "rating": 4.6,
     "stock": 33,
     "description": "Compact mechanical keyboard with hot-swappable switches and RGB backlight."
+  },
+  {
+    "id": "p009",
+    "name": "Echo Mini Bluetooth Speaker",
+    "category": "electronics",
+    "tags": [
+      "audio",
+      "wireless",
+      "travel",
+      "gift"
+    ],
+    "price": 34.99,
+    "rating": 4.3,
+    "stock": 80,
+    "description": "Pocket-size Bluetooth speaker with a splash-resistant shell and 12-hour battery life."
+  },
+  {
+    "id": "p010",
+    "name": "Orbit USB-C Charging Hub",
+    "category": "electronics",
+    "tags": [
+      "usb-c",
+      "charging",
+      "office",
+      "travel"
+    ],
+    "price": 44.99,
+    "rating": 4.5,
+    "stock": 65,
+    "description": "Four-port USB-C charging hub with a 65W total output for a tidy desk or travel bag."
+  },
+  {
+    "id": "p011",
+    "name": "Glide Ergonomic Wireless Mouse",
+    "category": "electronics",
+    "tags": [
+      "wireless",
+      "office",
+      "ergonomic",
+      "computer"
+    ],
+    "price": 29.99,
+    "rating": 4.4,
+    "stock": 95,
+    "description": "Contoured wireless mouse with quiet buttons, adjustable sensitivity and a rechargeable battery."
+  },
+  {
+    "id": "p012",
+    "name": "Vista HD Webcam",
+    "category": "electronics",
+    "tags": [
+      "video",
+      "office",
+      "computer",
+      "usb"
+    ],
+    "price": 49.99,
+    "rating": 4.2,
+    "stock": 50,
+    "description": "1080p USB webcam with a built-in microphone and a sliding privacy cover."
+  },
+  {
+    "id": "p013",
+    "name": "Flux Portable Power Bank",
+    "category": "electronics",
+    "tags": [
+      "charging",
+      "usb-c",
+      "travel",
+      "outdoors"
+    ],
+    "price": 39.99,
+    "rating": 4.6,
+    "stock": 110,
+    "description": "10,000mAh portable power bank with USB-C input and output and a battery-level display."
+  },
+  {
+    "id": "p014",
+    "name": "Sonata Wired Earbuds",
+    "category": "electronics",
+    "tags": [
+      "audio",
+      "usb-c",
+      "travel",
+      "budget"
+    ],
+    "price": 19.99,
+    "rating": 4.1,
+    "stock": 150,
+    "description": "USB-C wired earbuds with an inline microphone and three pairs of silicone ear tips."
+  },
+  {
+    "id": "p015",
+    "name": "Prism Laptop Stand",
+    "category": "electronics",
+    "tags": [
+      "office",
+      "ergonomic",
+      "computer",
+      "desk"
+    ],
+    "price": 54.99,
+    "rating": 4.7,
+    "stock": 38,
+    "description": "Foldable aluminum laptop stand with adjustable height for laptops up to 16 inches."
+  },
+  {
+    "id": "p016",
+    "name": "Ridge Trekking Poles",
+    "category": "outdoors",
+    "tags": [
+      "hiking",
+      "travel",
+      "support"
+    ],
+    "price": 64.99,
+    "rating": 4.5,
+    "stock": 45,
+    "description": "Pair of adjustable aluminum trekking poles with cork grips and removable trail baskets."
+  },
+  {
+    "id": "p017",
+    "name": "Ember Camping Lantern",
+    "category": "outdoors",
+    "tags": [
+      "camping",
+      "lighting",
+      "rechargeable",
+      "travel"
+    ],
+    "price": 34.5,
+    "rating": 4.4,
+    "stock": 70,
+    "description": "Rechargeable camping lantern with warm and cool light settings and a hanging loop."
+  },
+  {
+    "id": "p018",
+    "name": "Terra Picnic Blanket",
+    "category": "outdoors",
+    "tags": [
+      "picnic",
+      "travel",
+      "family",
+      "gift"
+    ],
+    "price": 29.99,
+    "rating": 4.3,
+    "stock": 90,
+    "description": "Foldable picnic blanket with a water-resistant backing and a built-in carry handle."
+  },
+  {
+    "id": "p019",
+    "name": "Cove Packable Rain Poncho",
+    "category": "outdoors",
+    "tags": [
+      "hiking",
+      "rain",
+      "travel",
+      "camping"
+    ],
+    "price": 22,
+    "rating": 4.2,
+    "stock": 100,
+    "description": "Reusable hooded rain poncho that packs into a small pouch for unexpected showers."
+  },
+  {
+    "id": "p020",
+    "name": "Alpine Sleeping Bag",
+    "category": "outdoors",
+    "tags": [
+      "camping",
+      "hiking",
+      "sleep"
+    ],
+    "price": 79.99,
+    "rating": 4.6,
+    "stock": 25,
+    "description": "Lightweight three-season sleeping bag with a comfort rating of 40?F and a compression sack."
+  },
+  {
+    "id": "p021",
+    "name": "Trail Compact First Aid Kit",
+    "category": "outdoors",
+    "tags": [
+      "hiking",
+      "camping",
+      "travel",
+      "essentials"
+    ],
+    "price": 18.99,
+    "rating": 4.5,
+    "stock": 130,
+    "description": "Compact first aid pouch with adhesive bandages, gauze, tape and cleansing wipes for minor scrapes."
+  },
+  {
+    "id": "p022",
+    "name": "Pine Camp Cook Set",
+    "category": "outdoors",
+    "tags": [
+      "camping",
+      "cooking",
+      "travel"
+    ],
+    "price": 49.99,
+    "rating": 4.4,
+    "stock": 40,
+    "description": "Nesting two-person camp cook set with a pot, pan and two bowls; stove sold separately."
+  },
+  {
+    "id": "p023",
+    "name": "Horizon Dry Bag",
+    "category": "outdoors",
+    "tags": [
+      "waterproof",
+      "travel",
+      "hiking",
+      "storage"
+    ],
+    "price": 27.5,
+    "rating": 4.7,
+    "stock": 85,
+    "description": "10L roll-top dry bag with a detachable shoulder strap for keeping gear dry during splashes."
+  },
+  {
+    "id": "p024",
+    "name": "Willow Ceramic Mug",
+    "category": "home",
+    "tags": [
+      "kitchen",
+      "coffee",
+      "gift",
+      "ceramic"
+    ],
+    "price": 16,
+    "rating": 4.5,
+    "stock": 140,
+    "description": "350mL glazed ceramic mug with a comfortable handle; dishwasher and microwave safe."
+  },
+  {
+    "id": "p025",
+    "name": "Haven Cotton Throw",
+    "category": "home",
+    "tags": [
+      "decor",
+      "comfort",
+      "gift",
+      "cotton"
+    ],
+    "price": 45,
+    "rating": 4.6,
+    "stock": 55,
+    "description": "Soft woven cotton throw measuring 50 by 60 inches with a subtle fringed edge."
+  },
+  {
+    "id": "p026",
+    "name": "Moss Self-Watering Planter",
+    "category": "home",
+    "tags": [
+      "decor",
+      "plants",
+      "office",
+      "gift"
+    ],
+    "price": 28.99,
+    "rating": 4.3,
+    "stock": 60,
+    "description": "Indoor planter with a removable inner pot and water reservoir; plant not included."
+  },
+  {
+    "id": "p027",
+    "name": "Atlas Desk Organizer",
+    "category": "home",
+    "tags": [
+      "office",
+      "desk",
+      "storage",
+      "bamboo"
+    ],
+    "price": 25.99,
+    "rating": 4.4,
+    "stock": 75,
+    "description": "Bamboo desktop organizer with compartments for stationery, notes and charging cables."
+  },
+  {
+    "id": "p028",
+    "name": "Solstice Pour-Over Coffee Set",
+    "category": "home",
+    "tags": [
+      "kitchen",
+      "coffee",
+      "gift"
+    ],
+    "price": 59.99,
+    "rating": 4.7,
+    "stock": 30,
+    "description": "Glass coffee server and ceramic dripper for manual brewing; includes 20 paper filters."
+  },
+  {
+    "id": "p029",
+    "name": "Linen Kitchen Towel Trio",
+    "category": "home",
+    "tags": [
+      "kitchen",
+      "cleaning",
+      "linen",
+      "gift"
+    ],
+    "price": 21,
+    "rating": 4.2,
+    "stock": 115,
+    "description": "Three absorbent linen-blend kitchen towels with hanging loops and simple woven stripes."
+  },
+  {
+    "id": "p030",
+    "name": "Aura Bedside Clock",
+    "category": "home",
+    "tags": [
+      "sleep",
+      "decor",
+      "lighting",
+      "bedroom"
+    ],
+    "price": 36.99,
+    "rating": 4.3,
+    "stock": 48,
+    "description": "Digital bedside alarm clock with a dimmable display, snooze button and USB power cable."
+  },
+  {
+    "id": "p031",
+    "name": "Pebble Storage Basket Set",
+    "category": "home",
+    "tags": [
+      "storage",
+      "decor",
+      "organization"
+    ],
+    "price": 42,
+    "rating": 4.5,
+    "stock": 42,
+    "description": "Set of three woven cotton-rope baskets for organizing shelves, accessories and small blankets."
+  },
+  {
+    "id": "p032",
+    "name": "Roam Everyday Cap",
+    "category": "apparel",
+    "tags": [
+      "travel",
+      "casual",
+      "cotton",
+      "adjustable"
+    ],
+    "price": 24.99,
+    "rating": 4.4,
+    "stock": 100,
+    "description": "Cotton everyday cap with a curved brim and an adjustable rear strap."
+  },
+  {
+    "id": "p033",
+    "name": "Meridian Merino Beanie",
+    "category": "apparel",
+    "tags": [
+      "winter",
+      "warm",
+      "wool",
+      "hiking"
+    ],
+    "price": 29.99,
+    "rating": 4.6,
+    "stock": 65,
+    "description": "Soft merino-blend cuffed beanie with a stretchy knit for cool-weather walks."
+  },
+  {
+    "id": "p034",
+    "name": "Stride Running Sock Trio",
+    "category": "apparel",
+    "tags": [
+      "running",
+      "sport",
+      "socks",
+      "fitness"
+    ],
+    "price": 18.99,
+    "rating": 4.3,
+    "stock": 150,
+    "description": "Three pairs of stretch-knit running socks with breathable panels and cushioned heels."
+  },
+  {
+    "id": "p035",
+    "name": "Harbor Canvas Tote",
+    "category": "apparel",
+    "tags": [
+      "travel",
+      "shopping",
+      "bag",
+      "eco"
+    ],
+    "price": 19.5,
+    "rating": 4.5,
+    "stock": 120,
+    "description": "Reusable cotton-canvas tote with long shoulder handles and an interior pocket."
+  },
+  {
+    "id": "p036",
+    "name": "Summit Fleece Neck Warmer",
+    "category": "apparel",
+    "tags": [
+      "winter",
+      "hiking",
+      "warm",
+      "outdoors"
+    ],
+    "price": 17.99,
+    "rating": 4.2,
+    "stock": 95,
+    "description": "Stretch fleece neck warmer for layering on chilly walks and outdoor trips."
+  },
+  {
+    "id": "p037",
+    "name": "Pace Reflective Running Belt",
+    "category": "apparel",
+    "tags": [
+      "running",
+      "fitness",
+      "reflective",
+      "storage"
+    ],
+    "price": 26.99,
+    "rating": 4.4,
+    "stock": 70,
+    "description": "Adjustable running belt with reflective trim and a zip pocket for keys and phones up to 6.7 inches."
+  },
+  {
+    "id": "p038",
+    "name": "Dune Lightweight Scarf",
+    "category": "apparel",
+    "tags": [
+      "travel",
+      "casual",
+      "gift",
+      "cotton"
+    ],
+    "price": 32,
+    "rating": 4.5,
+    "stock": 45,
+    "description": "Lightweight woven cotton scarf measuring 70 by 28 inches for easy everyday layering."
+  },
+  {
+    "id": "p039",
+    "name": "Voyage Travel Wallet",
+    "category": "apparel",
+    "tags": [
+      "travel",
+      "storage",
+      "organization",
+      "gift"
+    ],
+    "price": 34.99,
+    "rating": 4.6,
+    "stock": 58,
+    "description": "Zip-around travel wallet with passport storage, card slots and a removable wrist strap."
+  },
+  {
+    "id": "p040",
+    "name": "Studio Yoga Headband Set",
+    "category": "apparel",
+    "tags": [
+      "fitness",
+      "yoga",
+      "sport",
+      "stretch"
+    ],
+    "price": 14.99,
+    "rating": 4.1,
+    "stock": 160,
+    "description": "Set of three soft stretch-fabric headbands for yoga, workouts and everyday use."
   }
 ]

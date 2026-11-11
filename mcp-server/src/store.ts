@@ -4,9 +4,11 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import seed from "./data/products.json" with { type: "json" };
+import { buildHikingPlan, type HikingBundle } from "./hiking.js";
 
 export interface Product { id: string; name: string; category: string; tags: string[]; price: number; rating: number; stock: number; description: string }
-interface Line { productId: string; name: string; unitPrice: number; quantity: number; lineTotal: number }
+export interface Line { productId: string; name: string; unitPrice: number; quantity: number; lineTotal: number }
+export interface CartSummary { items: Line[]; subtotal: number; tax: number; total: number; itemCount: number }
 export interface Review { reviewId: string; shippingAddress: string; items: Line[]; subtotal: number; tax: number; total: number; itemCount: number; expiresAt: string }
 export interface Order extends Review { orderId: string; createdAt: string; status: "confirmed" }
 const money = (n: number) => Math.round(n * 100) / 100;
@@ -22,6 +24,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS carts (session TEXT, product TEXT, quantity INTEGER NOT NULL CHECK(quantity > 0), PRIMARY KEY(session, product));
       CREATE TABLE IF NOT EXISTS reviews (id TEXT PRIMARY KEY, session TEXT NOT NULL, fingerprint TEXT NOT NULL, data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, session TEXT NOT NULL, review TEXT UNIQUE NOT NULL, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS bundles (id TEXT PRIMARY KEY, session TEXT NOT NULL, fingerprint TEXT NOT NULL, data TEXT NOT NULL, applied INTEGER NOT NULL DEFAULT 0);
+      CREATE INDEX IF NOT EXISTS bundles_session ON bundles(session);
       CREATE INDEX IF NOT EXISTS orders_session ON orders(session);
       CREATE INDEX IF NOT EXISTS reviews_session ON reviews(session);`);
     const insert = this.db.prepare("INSERT OR IGNORE INTO products VALUES (?, ?, ?)");
@@ -55,7 +59,7 @@ export class Store {
     return catalog.filter(p => p.stock > 0 && p.id !== base?.id && (!opts.category || p.category === opts.category))
       .sort((a, b) => score(b) - score(a) || b.rating - a.rating).slice(0, opts.limit ?? 4);
   }
-  cartSummary(session: string) {
+  cartSummary(session: string): CartSummary {
     const rows = this.db.prepare("SELECT product, quantity FROM carts WHERE session = ? ORDER BY product").all(session);
     const catalog = this.getCatalog();
     const items: Line[] = rows.map(row => {
@@ -96,6 +100,42 @@ export class Store {
         throw new Error(`Stock changed for "${item.name}". Update your cart and review again.`);
     }
   }
+  planHikingBundle(session: string, budget = 150): HikingBundle {
+    return this.transaction(() => {
+      const cart = this.cartSummary(session);
+      this.validateStock(cart.items);
+      const plan: HikingBundle = {
+        ...buildHikingPlan(this.getCatalog(), cart, budget), bundleId: randomUUID(),
+        expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
+      };
+      this.db.prepare("DELETE FROM bundles WHERE session = ? AND applied = 0").run(session);
+      this.db.prepare("INSERT INTO bundles (id, session, fingerprint, data) VALUES (?, ?, ?, ?)")
+        .run(plan.bundleId, session, JSON.stringify(cart), JSON.stringify(plan));
+      return plan;
+    });
+  }
+  applyHikingBundle(session: string, bundleId: string) {
+    return this.transaction(() => {
+      const row = this.db.prepare("SELECT * FROM bundles WHERE id = ? AND session = ?").get(bundleId, session);
+      if (!row) throw new Error("Preview a hiking bundle before adding it.");
+      if (row.applied) return this.cartSummary(session);
+      const plan: HikingBundle = JSON.parse(row.data as string);
+      if (Date.parse(plan.expiresAt) <= Date.now()) throw new Error("This bundle expired. Build a new preview.");
+      if (row.fingerprint !== JSON.stringify(this.cartSummary(session))) throw new Error("Your cart changed. Build a new bundle preview.");
+      const catalog = this.getCatalog();
+      for (const item of plan.items) {
+        if (catalog.find(p => p.id === item.productId)?.price !== item.unitPrice)
+          throw new Error("A product price changed. Build a new bundle preview.");
+      }
+      this.validateStock(plan.projectedCart.items);
+      // Validate every line before writing: either the whole bundle is added or none of it is.
+      const insert = this.db.prepare("INSERT INTO carts VALUES (?, ?, ?) ON CONFLICT(session, product) DO UPDATE SET quantity = quantity + excluded.quantity");
+      for (const item of plan.items) insert.run(session, item.productId, item.quantity);
+      this.db.prepare("UPDATE bundles SET applied = 1 WHERE id = ?").run(bundleId);
+      this.db.prepare("DELETE FROM reviews WHERE session = ?").run(session);
+      return this.cartSummary(session);
+    });
+  }
   prepareCheckout(session: string, shippingAddress: string): Review {
     if (typeof shippingAddress !== "string" || shippingAddress.trim().length < 10 || shippingAddress.length > 1000)
       throw new Error("Enter a complete shipping address (10-1000 characters).");
@@ -131,8 +171,12 @@ export class Store {
   shopperState(session: string) {
     const row = this.db.prepare("SELECT data FROM reviews WHERE session = ?").get(session);
     const review: Review | null = row ? JSON.parse(row.data as string) : null;
+    const cart = this.cartSummary(session);
+    const bundleRow = this.db.prepare("SELECT * FROM bundles WHERE session = ? AND applied = 0 ORDER BY rowid DESC LIMIT 1").get(session);
+    const bundle: HikingBundle | null = bundleRow ? JSON.parse(bundleRow.data as string) : null;
     return {
-      cart: this.cartSummary(session), review: review && Date.parse(review.expiresAt) > Date.now() ? review : null,
+      cart, review: review && Date.parse(review.expiresAt) > Date.now() ? review : null,
+      bundle: bundle && Date.parse(bundle.expiresAt) > Date.now() && bundleRow?.fingerprint === JSON.stringify(cart) ? bundle : null,
       orders: this.db.prepare("SELECT data FROM orders WHERE session = ? ORDER BY rowid DESC LIMIT 20").all(session).map(r => JSON.parse(r.data as string) as Order),
     };
   }
@@ -147,3 +191,5 @@ export const cartSummary = (s: string) => store().cartSummary(s);
 export const prepareCheckout = (s: string, a: string) => store().prepareCheckout(s, a);
 export const confirmCheckout = (s: string, r: string) => store().confirmCheckout(s, r);
 export const shopperState = (s: string) => store().shopperState(s);
+export const planHikingBundle = (s: string, budget?: number) => store().planHikingBundle(s, budget);
+export const applyHikingBundle = (s: string, id: string) => store().applyHikingBundle(s, id);

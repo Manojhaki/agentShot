@@ -7,6 +7,8 @@ import {
   prepareCheckout,
   confirmCheckout,
   shopperState,
+  planHikingBundle,
+  applyHikingBundle,
   recommendProducts,
   removeFromCart,
   searchProducts,
@@ -148,6 +150,23 @@ server.registerTool(
   },
 );
 
+
+server.registerTool("plan_hiking_bundle", {
+  title: "Preview a budget-aware hiking bundle",
+  description: "Build a hiking bundle preview without changing the cart. Budget includes the existing cart and 8% demo tax. Default $150. Tell the shopper to click Add hiking bundle in the storefront; do not add these products separately.",
+  inputSchema: { sessionId: z.string(), budget: zLenientNumber().min(1).max(10000).default(150) },
+}, async ({ sessionId, budget }) => {
+  try { return textResult(planHikingBundle(sessionId, budget)); }
+  catch (error) { return { content: [{ type: "text" as const, text: (error as Error).message }], isError: true }; }
+});
+server.registerTool("apply_hiking_bundle", {
+  title: "Add a previewed hiking bundle",
+  description: "Storefront-only explicit application of a saved bundle. Not exposed to the model.",
+  inputSchema: { sessionId: z.string(), bundleId: z.string().uuid() },
+}, async ({ sessionId, bundleId }) => {
+  try { return textResult(applyHikingBundle(sessionId, bundleId)); }
+  catch (error) { return { content: [{ type: "text" as const, text: (error as Error).message }], isError: true }; }
+});
 
 server.registerTool("get_shopper_state", {
   title: "Get cart, review and orders", description: "Get this shopper's cart, pending review and saved orders.",

@@ -50,7 +50,7 @@ export default function ChatWidget({ disabled, onBusy, onChange, onAdd }: {
       {loading && <div className="msg assistant" role="status">Finding the details…</div>}
       <div ref={end} />
     </div>
-    {messages.length === 1 && <div className="suggestions">{["Headphones under $150", "Recommend hiking essentials", "What's in my cart?"].map(text => <button key={text} disabled={disabled} onClick={() => send(text)}>{text}</button>)}</div>}
+    {messages.length === 1 && <div className="suggestions">{["Headphones under $150", "Build a hiking bundle under $150", "What's in my cart?"].map(text => <button key={text} disabled={disabled} onClick={() => send(text)}>{text}</button>)}</div>}
     {error && <p className="chat-error" role="alert">{error}</p>}
     <form className="chat-input" onSubmit={e => { e.preventDefault(); send(); }}>
       <label className="sr-only" htmlFor="chat-message">Message the shopping assistant</label>

@@ -28,6 +28,10 @@ npm.cmd run dev:web
 
 The backend defaults to http://localhost:4000; the storefront defaults to http://localhost:3000 and selects another port if busy. Use localhost for both services so the session cookie is shared correctly. The backend must restart after rebuilding MCP changes.
 
+## Demo catalog
+
+The catalog contains 40 fictional products: 10 each in electronics, outdoors, home and apparel. Prices, ratings and stock are demo data, with products from $14.99 to $129.99. New product IDs in mcp-server/src/data/products.json are inserted automatically on the next MCP server startup. Rebuild the services and restart the backend after changing the catalog; existing stock, carts and orders are preserved.
+
 ## Shopping flow
 
 1. Browse products and add them directly, or ask “Find wireless headphones under $150”.
@@ -37,6 +41,16 @@ The backend defaults to http://localhost:4000; the storefront defaults to http:/
 5. Open the saved receipt in **Saved orders**. Reloading or restarting the backend preserves carts, inventory and orders.
 
 Reviews expire after 15 minutes and are invalidated by cart changes. Checkout rechecks stock and commits the order, stock deduction and cart clearing in one SQLite transaction. Repeating the same confirmation returns the original order; it cannot create a second purchase.
+
+## Hiking bundles
+
+Use **Build your hiking bundle** above the collection, enter a total cart budget, and choose **Preview hiking bundle**. You can also ask the assistant ?Build a hiking bundle under $150?.
+
+The backend selects a reproducible combination of available hiking products, prioritizing a backpack, hydration and a compact first aid kit, then additional trail accessories if the budget allows. It includes existing cart items and 8% demo tax in the budget and avoids duplicating hiking products already in the cart. A $150 budget with an empty cart currently previews a backpack, bottle and first aid kit for $143.09 total.
+
+The preview explains each pick and shows the projected cart total. **Add hiking bundle** adds all picks together after rechecking prices, stock and the unchanged cart. Nothing is ordered by building or adding a bundle. Continue through the normal shipping review and order confirmation.
+
+Previews are saved per shopper for 15 minutes. Cart edits require rebuilding the preview. Adding is transactional and retry-safe. The assistant can call plan_hiking_bundle, but apply_hiking_bundle is reserved for the storefront button. Selection uses explicit demo priorities, rather than allowing the LLM to invent prices or products. These starter picks do not represent a complete hiking equipment checklist.
 
 ## Architecture
 

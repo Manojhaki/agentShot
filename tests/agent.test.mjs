@@ -4,9 +4,10 @@ import { randomUUID } from "node:crypto";
 import { runAgentTurn } from "../agent-backend/dist/agent.js";
 import { bindSession } from "../agent-backend/dist/policy.js";
 test("every shopper tool replaces a model-supplied session", () => {
-  for (const name of ["add_to_cart","remove_from_cart","get_cart","prepare_checkout","get_shopper_state"])
+  for (const name of ["add_to_cart","remove_from_cart","get_cart","prepare_checkout","get_shopper_state","plan_hiking_bundle"])
     assert.equal(bindSession(name, { sessionId: "victim" }, "owner").sessionId, "owner");
   assert.throws(() => bindSession("confirm_checkout", {}, "owner"));
+  assert.throws(() => bindSession("apply_hiking_bundle", {}, "owner"));
 });
 test("failed tools reach the model as errors and cannot produce a false checkout confirmation", async () => {
   let turn = 0;

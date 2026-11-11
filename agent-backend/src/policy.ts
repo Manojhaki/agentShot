@@ -1,5 +1,5 @@
-const publicTools = new Set(["search_products", "get_recommendations", "add_to_cart", "remove_from_cart", "get_cart", "prepare_checkout", "get_shopper_state"]);
-const sessionTools = new Set(["add_to_cart", "remove_from_cart", "get_cart", "prepare_checkout", "get_shopper_state"]);
+const publicTools = new Set(["search_products", "get_recommendations", "add_to_cart", "remove_from_cart", "get_cart", "prepare_checkout", "get_shopper_state", "plan_hiking_bundle"]);
+const sessionTools = new Set(["add_to_cart", "remove_from_cart", "get_cart", "prepare_checkout", "get_shopper_state", "plan_hiking_bundle"]);
 
 export function bindSession(name: string, args: Record<string, unknown>, sessionId: string) {
   if (!publicTools.has(name)) throw new Error("This action requires confirmation in the storefront.");

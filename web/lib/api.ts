@@ -3,7 +3,8 @@ export interface Line { productId: string; name: string; unitPrice: number; quan
 export interface Cart { items: Line[]; subtotal: number; tax: number; total: number; itemCount: number }
 export interface Review extends Cart { reviewId: string; shippingAddress: string; expiresAt: string }
 export interface Order extends Review { orderId: string; createdAt: string; status: string }
-export interface ShopperState { cart: Cart; review: Review | null; orders: Order[] }
+export interface HikingBundle { bundleId: string; budget: number; items: (Line & { reason: string })[]; projectedCart: Cart; additionalTotal: number; expiresAt: string }
+export interface ShopperState { cart: Cart; review: Review | null; orders: Order[]; bundle: HikingBundle | null }
 export interface ToolCall { name: string; input: unknown; output: string; isError: boolean }
 export const money = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";

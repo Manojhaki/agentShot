@@ -4,6 +4,7 @@ import { once } from "node:events";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import seed from "../mcp-server/dist/data/products.json" with { type: "json" };
 import { createApp, callStore } from "../agent-backend/dist/app.js";
 import { closeMcpClient } from "../agent-backend/dist/mcpClient.js";
 
@@ -36,7 +37,7 @@ test("HTTP + real MCP: isolated sessions, reviewed purchase, replay and saved re
   assert.notEqual(alice.cookie, bob.cookie);
   assert.equal(alice.data.cart.itemCount, 0);
   const products = await request("/products", undefined, alice.cookie);
-  assert.equal(products.data.length, 8);
+  assert.equal(products.data.length, seed.length);
   assert.equal((await request("/cart", { productId: "p001", quantity: -1 }, alice.cookie)).status, 400);
   assert.equal((await request("/cart", { productId: "p001", sessionId: bob.cookie }, alice.cookie)).status, 200);
   assert.equal((await request("/state", undefined, bob.cookie)).data.cart.itemCount, 0);
@@ -65,4 +66,21 @@ test("HTTP + real MCP: isolated sessions, reviewed purchase, replay and saved re
   assert.equal(state.orders.length, 1);
   assert.equal((await request("/state", undefined, bob.cookie)).data.orders.length, 0);
   assert.equal((await request("/products", undefined, alice.cookie)).data.find(p => p.id === "p001").stock, products.data.find(p => p.id === "p001").stock - 1);
+  assert.equal((await request("/bundle/preview", { budget: -1 }, bob.cookie)).status, 400);
+  const bundle = await request("/bundle/preview", { budget: 150, sessionId: "forged" }, bob.cookie);
+  assert.equal(bundle.status, 200);
+  assert.equal(bundle.data.projectedCart.total, 143.09);
+  assert.equal((await request("/state", undefined, bob.cookie)).data.cart.itemCount, 0);
+  assert.equal((await request("/bundle/apply", { bundleId: bundle.data.bundleId }, alice.cookie)).status, 409);
+  const [added, replay] = await Promise.all([
+    request("/bundle/apply", { bundleId: bundle.data.bundleId }, bob.cookie),
+    request("/bundle/apply", { bundleId: bundle.data.bundleId }, bob.cookie),
+  ]);
+  assert.equal(added.status, 200);
+  assert.equal(added.data.itemCount, 3);
+  assert.equal(replay.data.itemCount, 3);
+  const afterBundle = (await request("/state", undefined, bob.cookie)).data;
+  assert.equal(afterBundle.bundle, null);
+  assert.equal(afterBundle.orders.length, 0);
+  assert.equal(afterBundle.cart.total, 143.09);
 });

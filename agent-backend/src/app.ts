@@ -46,6 +46,17 @@ export function createApp(storeCall = callStore, agentTurn = runAgentTurn) {
     if (typeof req.body?.shippingAddress !== "string") { res.status(400).json({ error: "Shipping address is required." }); return; }
     res.json(await storeCall("prepare_checkout", { sessionId: res.locals.sessionId, shippingAddress: req.body.shippingAddress }));
   }));
+  app.post("/api/bundle/preview", action(async (req, res) => {
+    const budget = req.body?.budget ?? 150;
+    if (typeof budget !== "number" || !Number.isFinite(budget) || budget < 1 || budget > 10000) {
+      res.status(400).json({ error: "Enter a budget between $1 and $10,000." }); return;
+    }
+    res.json(await storeCall("plan_hiking_bundle", { sessionId: res.locals.sessionId, budget }));
+  }));
+  app.post("/api/bundle/apply", action(async (req, res) => {
+    if (typeof req.body?.bundleId !== "string") { res.status(400).json({ error: "Preview a bundle first." }); return; }
+    res.json(await storeCall("apply_hiking_bundle", { sessionId: res.locals.sessionId, bundleId: req.body.bundleId }));
+  }));
   app.post("/api/checkout/confirm", action(async (req, res) => {
     if (typeof req.body?.reviewId !== "string" || req.body?.confirmed !== true) { res.status(400).json({ error: "Explicit confirmation and a checkout review are required." }); return; }
     res.json(await storeCall("confirm_checkout", { sessionId: res.locals.sessionId, reviewId: req.body.reviewId }));

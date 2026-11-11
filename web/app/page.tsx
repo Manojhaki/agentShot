@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import ProductGrid from "../components/ProductGrid";
 import ChatWidget from "../components/ChatWidget";
 import CartPanel from "../components/CartPanel";
+import HikingBundlePanel from "../components/HikingBundlePanel";
 import { api, Product, ShopperState } from "../lib/api";
 import "./globals.css";
 
@@ -41,6 +42,7 @@ export default function Home() {
     <div className="notice" role="status">{notice}</div>
     <div className="layout">
       <section aria-labelledby="collection-title">
+        <HikingBundlePanel state={state} busy={busy} onAction={mutate} />
         <div className="section-heading"><h2 id="collection-title">The collection</h2><span>{products.length} thoughtful essentials</span></div>
         {!state && !error ? <p role="status">Opening your store…</p> : <ProductGrid products={products} onAdd={add} disabled={busy || !state} />}
       </section>
