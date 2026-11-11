@@ -9,3 +9,5 @@ mcp-server/data/
 web/tsconfig.tsbuildinfo
 output/
 .playwright-cli/
+
+telemetry/data/

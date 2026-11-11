@@ -84,3 +84,5 @@ footer { font-size: 11px; color: #89917f; padding: 36px 0; line-height: 1.7; }
 .bundle-items { margin: 0; padding: 0; list-style: none; }.bundle-items li { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; padding: 14px 0; border-bottom: 1px solid #edf0e9; font-size: 13px; }.bundle-items li > span { white-space: nowrap; font-variant-numeric: tabular-nums; }.bundle-items p { color: #68735f; font-size: 11px; line-height: 1.6; margin: 5px 0 0; }
 .bundle-totals { font-size: 12px; font-variant-numeric: tabular-nums; }.bundle-totals > div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; }.bundle-totals dt { color: #68735f; }.bundle-totals dd { margin: 0; white-space: nowrap; }.bundle-totals > div:nth-child(3) { border-top: 1px solid #e3eadb; margin-top: 7px; padding-top: 13px; }.bundle-preview > .muted { font-size: 11px; color: #68735f; }
 @media (max-width: 950px) { .bundle-form { align-items: stretch; flex-direction: column; }.hiking-panel { padding: 18px; }.hiking-symbol { display: none; }.bundle-preview { padding: 14px; } }
+
+.trace-id { overflow-wrap: anywhere; user-select: text; line-height: 1.7; }

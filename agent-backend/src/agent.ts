@@ -1,4 +1,5 @@
-import { getMcpClient } from "./mcpClient.js";
+import { getMcpClient, invokeMcpTool } from "./mcpClient.js";
+import { captureContent, contentEnabled, inSpan, recordError, SpanKind, trace } from "@agentshot/telemetry";
 import { bindSession, safeReply } from "./policy.js";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
@@ -23,6 +24,7 @@ Be concise and friendly.`;
 interface OllamaMessage {
   role: "system" | "user" | "assistant" | "tool";
   content: string;
+  thinking?: string;
   tool_calls?: { function: { name: string; arguments: Record<string, unknown> } }[];
 }
 
@@ -47,8 +49,7 @@ async function mcpToolsAsOllamaTools(): Promise<OllamaTool[]> {
 }
 
 async function callMcpTool(name: string, args: Record<string, unknown>) {
-  const client = await getMcpClient();
-  const result = await client.callTool({ name, arguments: args });
+  const result = await invokeMcpTool(name, args);
   const content = Array.isArray(result.content) ? result.content : [];
   const text = content
     .filter((c): c is { type: "text"; text: string } => c.type === "text")
@@ -62,7 +63,7 @@ async function ollamaChat(messages: OllamaMessage[], tools: OllamaTool[], signal
     method: "POST",
     headers: { "Content-Type": "application/json" },
     signal: signal ?? AbortSignal.timeout(90_000),
-    body: JSON.stringify({ model: MODEL, messages, tools, stream: false }),
+    body: JSON.stringify({ model: MODEL, messages, tools, stream: false, ...(process.env.OLLAMA_THINK ? { think: process.env.OLLAMA_THINK === "true" ? true : process.env.OLLAMA_THINK === "false" ? false : process.env.OLLAMA_THINK } : {}) }),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -71,7 +72,20 @@ async function ollamaChat(messages: OllamaMessage[], tools: OllamaTool[], signal
         `Is Ollama running and has "${MODEL}" been pulled (ollama pull ${MODEL})?`,
     );
   }
-  const data = (await res.json()) as { message: OllamaMessage };
+  const data = (await res.json()) as {
+    message: OllamaMessage; model?: string; prompt_eval_count?: number; eval_count?: number;
+    total_duration?: number; load_duration?: number; prompt_eval_duration?: number; eval_duration?: number; done_reason?: string;
+  };
+  const span = trace.getActiveSpan();
+  if (span) {
+    for (const [key, value] of [
+      ["gen_ai.usage.input_tokens", data.prompt_eval_count], ["gen_ai.usage.output_tokens", data.eval_count],
+      ["ollama.total_duration_ns", data.total_duration], ["ollama.load_duration_ns", data.load_duration],
+      ["ollama.prompt_eval_duration_ns", data.prompt_eval_duration], ["ollama.eval_duration_ns", data.eval_duration],
+    ] as const) if (typeof value === "number" && Number.isFinite(value)) span.setAttribute(key, value);
+    if (data.done_reason) span.setAttribute("gen_ai.response.finish_reasons", [data.done_reason]);
+    if (data.model) span.setAttribute("gen_ai.response.model", data.model);
+  }
   return data.message;
 }
 
@@ -82,21 +96,48 @@ export interface ChatResult {
 
 const defaultDependencies = { tools: mcpToolsAsOllamaTools, call: callMcpTool, chat: ollamaChat };
 
-export async function runAgentTurn(sessionId: string, userMessage: string, dependencies = defaultDependencies): Promise<ChatResult> {
+export function runAgentTurn(sessionId: string, userMessage: string, dependencies = defaultDependencies): Promise<ChatResult> {
+  return inSpan("agent.turn", {
+    "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "AgentShot shopping assistant",
+    "gen_ai.request.model": MODEL, "agent.content_capture_enabled": contentEnabled(),
+  }, async span => {
+    captureContent(span, "agent.user_message", userMessage);
+    const result = await runAgentTurnInternal(sessionId, userMessage, dependencies);
+    span.setAttribute("agent.tool_call_count", result.toolCalls.length);
+    captureContent(span, "agent.reply", result.reply);
+    return result;
+  });
+}
+async function runAgentTurnInternal(sessionId: string, userMessage: string, dependencies = defaultDependencies): Promise<ChatResult> {
   const deadline = AbortSignal.timeout(100_000);
   const history = conversations.get(sessionId) ?? [
     { role: "system", content: SYSTEM_PROMPT.replace("{{sessionId}}", sessionId) },
   ];
   history.push({ role: "user", content: userMessage });
 
-  const tools = await dependencies.tools();
+  const tools = await inSpan("mcp.list_tools", {}, () => dependencies.tools(), SpanKind.CLIENT);
   const toolCalls: ChatResult["toolCalls"] = [];
 
   // Agent loop: keep calling the local model, executing any requested tool calls
   // via MCP, until it responds with plain text (no more tool_calls).
   for (let iteration = 0; iteration < 8; iteration++) {
     deadline.throwIfAborted();
-    const message = await dependencies.chat(history, tools, deadline);
+    const message = await inSpan(`chat ${MODEL}`, {
+      "gen_ai.operation.name": "chat", "gen_ai.provider.name": "ollama",
+      "gen_ai.request.model": MODEL, "agent.iteration": iteration + 1,
+    }, async span => {
+      captureContent(span, "gen_ai.input.messages", history.map(m => m.role === "system" ? { role: m.role, content: "[system instructions omitted]" } : m));
+      const reply = await dependencies.chat(history, tools, deadline);
+      span.setAttributes({
+        "gen_ai.response.tool_call_count": reply.tool_calls?.length ?? 0,
+        "ollama.thinking.available": Boolean(reply.thinking),
+        "ollama.thinking.characters": reply.thinking?.length ?? 0,
+      });
+      // Capture only provider-returned thinking, never manufacture hidden reasoning.
+      if (reply.thinking) captureContent(span, "gen_ai.reasoning", { source: "ollama.message.thinking", text: reply.thinking });
+      captureContent(span, "gen_ai.output.message", { content: reply.content, tool_calls: reply.tool_calls });
+      return reply;
+    }, SpanKind.CLIENT);
     history.push(message);
 
     if (!message.tool_calls || message.tool_calls.length === 0) {
@@ -105,6 +146,8 @@ export async function runAgentTurn(sessionId: string, userMessage: string, depen
     }
 
     for (const call of message.tool_calls) {
+      const toolName = tools.some(tool => tool.function.name === call.function.name) ? call.function.name : "unknown_tool";
+      trace.getActiveSpan()?.addEvent("agent.tool.selected", { "gen_ai.tool.name": toolName, "agent.iteration": iteration + 1 });
       let input: Record<string, unknown> = {};
       let result: { text: string; isError: boolean };
       try {
@@ -113,6 +156,11 @@ export async function runAgentTurn(sessionId: string, userMessage: string, depen
         result = await dependencies.call(call.function.name, input);
       } catch (error) { result = { text: (error as Error).message, isError: true }; }
       toolCalls.push({ name: call.function.name, input, output: result.text, isError: result.isError });
+      trace.getActiveSpan()?.addEvent("agent.tool.result", { "gen_ai.tool.name": toolName, "tool.is_error": result.isError });
+      if (result.isError) {
+        const span = trace.getActiveSpan();
+        if (span) recordError(span, new Error("Tool execution failed"), "agent.tool_error");
+      }
       history.push({ role: "tool", content: result.text });
     }
   }

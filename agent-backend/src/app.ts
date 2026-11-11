@@ -1,24 +1,26 @@
 ﻿import cors from "cors";
 import express from "express";
 import { randomUUID } from "node:crypto";
-import { getMcpClient } from "./mcpClient.js";
+import { invokeMcpTool } from "./mcpClient.js";
+import { httpTracing } from "./httpTracing.js";
+import { recordError, trace, traceId } from "@agentshot/telemetry";
 import { resetConversation, runAgentTurn } from "./agent.js";
 
 export async function callStore(name: string, args: Record<string, unknown>) {
-  const client = await getMcpClient();
-  const result = await client.callTool({ name, arguments: args });
+  const result = await invokeMcpTool(name, args);
   const text = (result.content as { type: string; text?: string }[]).filter(c => c.type === "text").map(c => c.text).join("\n");
   if (result.isError) throw new Error(text || "Store action failed.");
   return JSON.parse(text);
 }
 export function createApp(storeCall = callStore, agentTurn = runAgentTurn) {
   const app = express();
+  app.use(httpTracing);
   const allowed = (origin: string) => /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin) || origin === process.env.WEB_ORIGIN;
   app.use((req, res, next) => {
     if (req.headers.origin && !allowed(req.headers.origin)) { res.status(403).json({ error: "Origin is not allowed." }); return; }
     next();
   });
-  app.use(cors({ origin: (origin, callback) => callback(null, !origin || allowed(origin)), credentials: true }));
+  app.use(cors({ origin: (origin, callback) => callback(null, !origin || allowed(origin)), credentials: true, exposedHeaders: ["X-Trace-Id"] }));
   app.use(express.json({ limit: "16kb" }));
   app.use((req, res, next) => {
     const cookie = req.headers.cookie?.split(";").map(c => c.trim()).find(c => c.startsWith("agentshot_session="))?.slice(18);
@@ -31,7 +33,11 @@ export function createApp(storeCall = callStore, agentTurn = runAgentTurn) {
   const action = (handler: (req: express.Request, res: express.Response) => Promise<unknown>) =>
     async (req: express.Request, res: express.Response) => {
       try { await handler(req, res); }
-      catch (err) { res.status(409).json({ error: (err as Error).message }); }
+      catch (err) {
+        const span = trace.getActiveSpan();
+        if (span) recordError(span, err);
+        res.status(409).json({ error: (err as Error).message, traceId: traceId() });
+      }
     };
   app.get("/api/products", action(async (_req, res) => { res.json(await storeCall("search_products", {})); }));
   app.get("/api/state", action(async (_req, res) => { res.json(await storeCall("get_shopper_state", { sessionId: res.locals.sessionId })); }));
@@ -68,7 +74,7 @@ export function createApp(storeCall = callStore, agentTurn = runAgentTurn) {
     const session = res.locals.sessionId as string;
     if (busy.has(session)) { res.status(409).json({ error: "Please wait for the previous reply." }); return; }
     busy.add(session);
-    try { res.json(await agentTurn(session, message.trim())); } finally { busy.delete(session); }
+    try { res.json({ ...await agentTurn(session, message.trim()), traceId: traceId() }); } finally { busy.delete(session); }
   }));
   app.post("/api/chat/reset", (req, res) => { resetConversation(res.locals.sessionId); res.json({ ok: true }); });
   return app;

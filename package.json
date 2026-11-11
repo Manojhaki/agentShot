@@ -3,16 +3,18 @@
   "private": true,
   "version": "1.0.0",
   "workspaces": [
+    "telemetry",
     "mcp-server",
     "agent-backend",
     "web"
   ],
   "scripts": {
     "build": "npm run build:services && npm run build -w web",
-    "build:services": "npm run build -w mcp-server && npm run build -w agent-backend",
+    "build:services": "npm run build -w @agentshot/telemetry && npm run build -w mcp-server && npm run build -w agent-backend",
     "test": "npm run build:services && node --test tests/*.test.mjs",
     "dev:backend": "npm run dev -w agent-backend",
-    "dev:web": "npm run dev -w web"
+    "dev:web": "npm run dev -w web",
+    "traces": "node telemetry/viewer.mjs"
   },
   "engines": {
     "node": ">=22.13.0"

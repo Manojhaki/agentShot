@@ -1,7 +1,7 @@
 ﻿"use client";
 import { useEffect, useRef, useState } from "react";
 import { api, money, Product, ToolCall } from "../lib/api";
-interface Message { role: "user" | "assistant"; text: string; tools?: ToolCall[]; products?: Product[] }
+interface Message { role: "user" | "assistant"; text: string; tools?: ToolCall[]; products?: Product[]; traceId?: string }
 const greeting: Message = { role: "assistant", text: "Hi, what are you looking for? I can find a good match, build your cart, and help you get ready to check out." };
 export default function ChatWidget({ disabled, onBusy, onChange, onAdd }: {
   disabled: boolean; onBusy: (busy: boolean) => void; onChange: () => Promise<void>; onAdd: (id: string) => void;
@@ -17,14 +17,14 @@ export default function ChatWidget({ disabled, onBusy, onChange, onAdd }: {
     setInput(""); setError(""); setLoading(true); onBusy(true);
     setMessages(prev => [...prev, { role: "user", text }]);
     try {
-      const data = await api<{ reply: string; toolCalls: ToolCall[] }>("/chat", { message: text });
+      const data = await api<{ reply: string; toolCalls: ToolCall[]; traceId?: string }>("/chat", { message: text });
       const products = new Map<string, Product>();
       for (const tool of data.toolCalls) {
         if (!tool.isError && ["search_products", "get_recommendations"].includes(tool.name)) {
           try { for (const p of JSON.parse(tool.output) as Product[]) products.set(p.id, p); } catch { /* Tool output remains available in details. */ }
         }
       }
-      setMessages(prev => [...prev, { role: "assistant", text: data.reply, tools: data.toolCalls, products: [...products.values()].slice(0, 4) }]);
+      setMessages(prev => [...prev, { role: "assistant", text: data.reply, tools: data.toolCalls, products: [...products.values()].slice(0, 4), traceId: data.traceId }]);
     } catch (e) { setError((e as Error).message); setInput(text); }
     finally {
       try { await onChange(); } catch { setError("Couldn't refresh your cart. Refresh the store to see the latest changes."); }
@@ -45,7 +45,7 @@ export default function ChatWidget({ disabled, onBusy, onChange, onAdd }: {
         {!!m.products?.length && <div className="chat-products">{m.products.map(p => <article className="chat-product" key={p.id}>
           <strong>{p.name}</strong><div><span>{money(p.price)}</span><button className="text-button" disabled={disabled || !p.stock} onClick={() => onAdd(p.id)}>{p.stock ? "Add +" : "Sold out"}</button></div>
         </article>)}</div>}
-        {!!m.tools?.length && <details className="tool-details"><summary>Behind the scenes · {m.tools.length} action{m.tools.length === 1 ? "" : "s"}</summary>{m.tools.map((t, j) => <div key={j}><strong>{t.name} {t.isError ? "· Failed" : "· Done"}</strong><pre>{JSON.stringify(t.input, null, 2)}{"\n"}{t.output}</pre></div>)}</details>}
+        {(!!m.tools?.length || m.traceId) && <details className="tool-details"><summary>Behind the scenes · {m.tools?.length ?? 0} action{m.tools?.length === 1 ? "" : "s"}</summary>{m.traceId && <p className="trace-id">Trace: <code>{m.traceId}</code></p>}{m.tools?.map((t, j) => <div key={j}><strong>{t.name} {t.isError ? "· Failed" : "· Done"}</strong><pre>{JSON.stringify(t.input, null, 2)}{"\n"}{t.output}</pre></div>)}</details>}
       </div>)}
       {loading && <div className="msg assistant" role="status">Finding the details…</div>}
       <div ref={end} />

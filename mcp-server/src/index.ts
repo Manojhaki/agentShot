@@ -1,3 +1,6 @@
+import { captureContent, extractTrace, initializeTelemetry, inSpan, recordError, shutdownTelemetry, SpanKind } from "@agentshot/telemetry";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { ToolCallback } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -14,10 +17,32 @@ import {
   searchProducts,
 } from "./store.js";
 
+initializeTelemetry("agentshot-mcp");
+
 const server = new McpServer({
   name: "agentshot-ecommerce",
   version: "1.0.0",
 });
+
+function registerTool<T extends z.ZodRawShape>(
+  name: string,
+  config: { title: string; description: string; inputSchema: T },
+  handler: (args: z.infer<z.ZodObject<T>>) => CallToolResult | Promise<CallToolResult>,
+) {
+  const callback = (async (args: z.infer<z.ZodObject<T>>, extra: { _meta?: Record<string, unknown> }) =>
+    inSpan(`mcp.server ${name}`, { "mcp.tool.name": name, "rpc.system.name": "mcp" }, async span => {
+      captureContent(span, "mcp.tool.input", args);
+      const result = await handler(args);
+      span.setAttribute("mcp.tool.is_error", Boolean(result.isError));
+      if (result.isError) recordError(span, new Error("Store tool failed"), "mcp.tool_error");
+      captureContent(span, "mcp.tool.output", result.content);
+      return result;
+    }, SpanKind.SERVER, extractTrace(extra._meta))) as unknown as ToolCallback<T>;
+  return server.registerTool(name, config, callback);
+}
+server.server.onclose = () => { void shutdownTelemetry(); };
+for (const signal of ["SIGINT", "SIGTERM"] as const)
+  process.once(signal, () => { void server.close().finally(() => shutdownTelemetry()).finally(() => process.exit(0)); });
 
 function textResult(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -47,7 +72,7 @@ const zOptionalMaxPrice = () =>
   z.preprocess((val) => (val === 0 || val === "0" ? undefined : val), zLenientNumber().optional());
 
 // --- Product search / discovery agent tool ---
-server.registerTool(
+registerTool(
   "search_products",
   {
     title: "Search products",
@@ -65,7 +90,7 @@ server.registerTool(
 );
 
 // --- Recommendation agent tool ---
-server.registerTool(
+registerTool(
   "get_recommendations",
   {
     title: "Get product recommendations",
@@ -81,7 +106,7 @@ server.registerTool(
 );
 
 // --- Cart & checkout agent tools ---
-server.registerTool(
+registerTool(
   "add_to_cart",
   {
     title: "Add item to cart",
@@ -101,7 +126,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+registerTool(
   "remove_from_cart",
   {
     title: "Remove item from cart",
@@ -121,7 +146,7 @@ server.registerTool(
   },
 );
 
-server.registerTool(
+registerTool(
   "get_cart",
   {
     title: "Get cart contents",
@@ -131,7 +156,7 @@ server.registerTool(
   async ({ sessionId }) => textResult(cartSummary(sessionId)),
 );
 
-server.registerTool(
+registerTool(
   "prepare_checkout",
   {
     title: "Prepare checkout review",
@@ -151,7 +176,7 @@ server.registerTool(
 );
 
 
-server.registerTool("plan_hiking_bundle", {
+registerTool("plan_hiking_bundle", {
   title: "Preview a budget-aware hiking bundle",
   description: "Build a hiking bundle preview without changing the cart. Budget includes the existing cart and 8% demo tax. Default $150. Tell the shopper to click Add hiking bundle in the storefront; do not add these products separately.",
   inputSchema: { sessionId: z.string(), budget: zLenientNumber().min(1).max(10000).default(150) },
@@ -159,7 +184,7 @@ server.registerTool("plan_hiking_bundle", {
   try { return textResult(planHikingBundle(sessionId, budget)); }
   catch (error) { return { content: [{ type: "text" as const, text: (error as Error).message }], isError: true }; }
 });
-server.registerTool("apply_hiking_bundle", {
+registerTool("apply_hiking_bundle", {
   title: "Add a previewed hiking bundle",
   description: "Storefront-only explicit application of a saved bundle. Not exposed to the model.",
   inputSchema: { sessionId: z.string(), bundleId: z.string().uuid() },
@@ -168,11 +193,11 @@ server.registerTool("apply_hiking_bundle", {
   catch (error) { return { content: [{ type: "text" as const, text: (error as Error).message }], isError: true }; }
 });
 
-server.registerTool("get_shopper_state", {
+registerTool("get_shopper_state", {
   title: "Get cart, review and orders", description: "Get this shopper's cart, pending review and saved orders.",
   inputSchema: { sessionId: z.string() },
 }, async ({ sessionId }) => textResult(shopperState(sessionId)));
-server.registerTool("confirm_checkout", {
+registerTool("confirm_checkout", {
   title: "Confirm reviewed order", description: "Storefront-only confirmation. Never exposed to the model.",
   inputSchema: { sessionId: z.string(), reviewId: z.string().uuid() },
 }, async ({ sessionId, reviewId }) => {

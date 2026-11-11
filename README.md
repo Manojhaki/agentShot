@@ -76,6 +76,10 @@ Optional backend variables:
 
 The frontend uses NEXT_PUBLIC_API_URL (default http://localhost:4000). Requests include the session cookie; client-supplied session IDs are ignored. Localhost origins are allowed for local development. This local demo still needs account authentication, deployment-specific origin restrictions and production payment/tax/shipping integrations before public use.
 
+## Tracing
+
+OpenTelemetry captures HTTP requests, agent/model turns, MCP tools and store transactions. Run npm.cmd run traces and open http://127.0.0.1:4310 to inspect local traces. Prompt, payload and model-reported thinking content is opt-in. See [the tracing guide](telemetry/README.md) for capture settings, privacy defaults, model support and optional Jaeger/OTLP export.
+
 ## Validation
 
 ```powershell

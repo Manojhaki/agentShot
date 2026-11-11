@@ -11,6 +11,7 @@ import { closeMcpClient } from "../agent-backend/dist/mcpClient.js";
 test("HTTP + real MCP: isolated sessions, reviewed purchase, replay and saved receipt", async t => {
   const directory = mkdtempSync(join(tmpdir(), "agentshot-api-"));
   process.env.AGENTSHOT_DB_PATH = join(directory, "test.sqlite");
+  process.env.AGENTSHOT_TELEMETRY_DIR = join(directory, "traces");
   let agentSession;
   const server = createApp(callStore, async session => {
     agentSession = session;
@@ -21,6 +22,7 @@ test("HTTP + real MCP: isolated sessions, reviewed purchase, replay and saved re
     await new Promise(resolve => server.close(resolve));
     await closeMcpClient();
     delete process.env.AGENTSHOT_DB_PATH;
+    delete process.env.AGENTSHOT_TELEMETRY_DIR;
     rmSync(directory, { recursive: true, force: true });
   });
   const url = `http://127.0.0.1:${server.address().port}/api`;

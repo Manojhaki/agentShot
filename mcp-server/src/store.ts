@@ -1,3 +1,4 @@
+import { inSpanSync } from "@agentshot/telemetry";
 ﻿import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
@@ -33,9 +34,11 @@ export class Store {
   }
   close() { this.db.close(); }
   private transaction<T>(fn: () => T): T {
-    this.db.exec("BEGIN IMMEDIATE");
-    try { const value = fn(); this.db.exec("COMMIT"); return value; }
-    catch (error) { this.db.exec("ROLLBACK"); throw error; }
+    return inSpanSync("sqlite.transaction", { "db.system.name": "sqlite" }, () => {
+      this.db.exec("BEGIN IMMEDIATE");
+      try { const value = fn(); this.db.exec("COMMIT"); return value; }
+      catch (error) { this.db.exec("ROLLBACK"); throw error; }
+    });
   }
   getCatalog(): Product[] {
     return this.db.prepare("SELECT data, stock FROM products ORDER BY id").all().map(row => ({
@@ -183,13 +186,13 @@ export class Store {
 }
 let instance: Store;
 function store() { return instance ??= new Store(process.env.AGENTSHOT_DB_PATH ?? fileURLToPath(new URL("../data/agentshot.sqlite", import.meta.url))); }
-export const searchProducts = (opts: Parameters<Store["searchProducts"]>[0]) => store().searchProducts(opts);
-export const recommendProducts = (opts: Parameters<Store["recommendProducts"]>[0]) => store().recommendProducts(opts);
-export const addToCart = (s: string, p: string, n: number) => store().addToCart(s, p, n);
-export const removeFromCart = (s: string, p: string, n?: number) => store().removeFromCart(s, p, n);
-export const cartSummary = (s: string) => store().cartSummary(s);
-export const prepareCheckout = (s: string, a: string) => store().prepareCheckout(s, a);
-export const confirmCheckout = (s: string, r: string) => store().confirmCheckout(s, r);
-export const shopperState = (s: string) => store().shopperState(s);
-export const planHikingBundle = (s: string, budget?: number) => store().planHikingBundle(s, budget);
-export const applyHikingBundle = (s: string, id: string) => store().applyHikingBundle(s, id);
+export const searchProducts = (opts: Parameters<Store["searchProducts"]>[0]) => inSpanSync("store.searchProducts", { "store.operation": "searchProducts", "db.system.name": "sqlite" }, () => store().searchProducts(opts));
+export const recommendProducts = (opts: Parameters<Store["recommendProducts"]>[0]) => inSpanSync("store.recommendProducts", { "store.operation": "recommendProducts", "db.system.name": "sqlite" }, () => store().recommendProducts(opts));
+export const addToCart = (s: string, p: string, n: number) => inSpanSync("store.addToCart", { "store.operation": "addToCart", "db.system.name": "sqlite" }, () => store().addToCart(s, p, n));
+export const removeFromCart = (s: string, p: string, n?: number) => inSpanSync("store.removeFromCart", { "store.operation": "removeFromCart", "db.system.name": "sqlite" }, () => store().removeFromCart(s, p, n));
+export const cartSummary = (s: string) => inSpanSync("store.cartSummary", { "store.operation": "cartSummary", "db.system.name": "sqlite" }, () => store().cartSummary(s));
+export const prepareCheckout = (s: string, a: string) => inSpanSync("store.prepareCheckout", { "store.operation": "prepareCheckout", "db.system.name": "sqlite" }, () => store().prepareCheckout(s, a));
+export const confirmCheckout = (s: string, r: string) => inSpanSync("store.confirmCheckout", { "store.operation": "confirmCheckout", "db.system.name": "sqlite" }, () => store().confirmCheckout(s, r));
+export const shopperState = (s: string) => inSpanSync("store.shopperState", { "store.operation": "shopperState", "db.system.name": "sqlite" }, () => store().shopperState(s));
+export const planHikingBundle = (s: string, budget?: number) => inSpanSync("store.planHikingBundle", { "store.operation": "planHikingBundle", "db.system.name": "sqlite" }, () => store().planHikingBundle(s, budget));
+export const applyHikingBundle = (s: string, id: string) => inSpanSync("store.applyHikingBundle", { "store.operation": "applyHikingBundle", "db.system.name": "sqlite" }, () => store().applyHikingBundle(s, id));
