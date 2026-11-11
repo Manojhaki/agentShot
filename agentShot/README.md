@@ -20,14 +20,26 @@ Agents (implemented as MCP tools the agent can call):
 - **cart_checkout** → `add_to_cart`, `remove_from_cart`, `get_cart`, `checkout`
 
 The agent backend acts as the MCP **client**: it connects to the MCP server
-over stdio, lists its tools, exposes them to Claude as tool-use tools, and
-executes whichever tools Claude calls in a loop until it has a final answer.
+over stdio, lists its tools, exposes them to the LLM as function-calling
+tools, and executes whichever tools the model calls in a loop until it has a
+final answer.
+
+## LLM: local & free (Ollama)
+
+No API key required. The agent talks to a local [Ollama](https://ollama.com)
+instance running a tool-calling-capable model (default `llama3.2`).
+
+```powershell
+# Install Ollama (https://ollama.com/download), then:
+ollama pull llama3.2
+ollama serve        # usually already running as a background service after install
+```
 
 ## Setup
 
 ```powershell
 npm install
-copy agent-backend\.env.example agent-backend\.env   # then add your ANTHROPIC_API_KEY
+copy agent-backend\.env.example agent-backend\.env
 copy web\.env.local.example web\.env.local
 npm run build                                        # builds mcp-server + agent-backend
 ```

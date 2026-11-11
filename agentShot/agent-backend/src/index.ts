@@ -27,9 +27,6 @@ app.post("/api/chat", async (req, res) => {
   if (!sessionId || !message) {
     return res.status(400).json({ error: "sessionId and message are required" });
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: "ANTHROPIC_API_KEY is not configured on the server." });
-  }
   try {
     const result = await runAgentTurn(sessionId, message);
     res.json(result);
