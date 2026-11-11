@@ -1,0 +1,82 @@
+[
+  {
+    "id": "p001",
+    "name": "Aurora Wireless Headphones",
+    "category": "electronics",
+    "tags": ["audio", "wireless", "noise-cancelling"],
+    "price": 129.99,
+    "rating": 4.6,
+    "stock": 42,
+    "description": "Over-ear wireless headphones with active noise cancellation and 30-hour battery life."
+  },
+  {
+    "id": "p002",
+    "name": "Pulse Fitness Tracker",
+    "category": "electronics",
+    "tags": ["fitness", "wearable", "health"],
+    "price": 59.99,
+    "rating": 4.2,
+    "stock": 120,
+    "description": "Lightweight fitness band with heart-rate monitoring and sleep tracking."
+  },
+  {
+    "id": "p003",
+    "name": "Summit Trail Backpack",
+    "category": "outdoors",
+    "tags": ["hiking", "travel", "backpack"],
+    "price": 89.5,
+    "rating": 4.8,
+    "stock": 15,
+    "description": "35L water-resistant backpack built for multi-day hikes."
+  },
+  {
+    "id": "p004",
+    "name": "Nimbus Insulated Water Bottle",
+    "category": "outdoors",
+    "tags": ["hydration", "travel", "eco"],
+    "price": 24.0,
+    "rating": 4.5,
+    "stock": 200,
+    "description": "Stainless-steel bottle that keeps drinks cold for 24 hours."
+  },
+  {
+    "id": "p005",
+    "name": "Lumen Desk Lamp",
+    "category": "home",
+    "tags": ["lighting", "office", "led"],
+    "price": 39.99,
+    "rating": 4.3,
+    "stock": 75,
+    "description": "Adjustable LED desk lamp with three brightness modes and USB charging port."
+  },
+  {
+    "id": "p006",
+    "name": "Cedar & Sage Candle Set",
+    "category": "home",
+    "tags": ["decor", "fragrance", "gift"],
+    "price": 32.0,
+    "rating": 4.7,
+    "stock": 0,
+    "description": "Set of three soy wax candles with woodsy, calming scents."
+  },
+  {
+    "id": "p007",
+    "name": "Velocity Running Shoes",
+    "category": "apparel",
+    "tags": ["running", "shoes", "sport"],
+    "price": 110.0,
+    "rating": 4.4,
+    "stock": 60,
+    "description": "Breathable mesh running shoes with responsive cushioning."
+  },
+  {
+    "id": "p008",
+    "name": "Drift Mechanical Keyboard",
+    "category": "electronics",
+    "tags": ["keyboard", "office", "gaming"],
+    "price": 99.0,
+    "rating": 4.6,
+    "stock": 33,
+    "description": "Compact mechanical keyboard with hot-swappable switches and RGB backlight."
+  }
+]

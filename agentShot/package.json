@@ -1,0 +1,15 @@
+{
+  "name": "agentshot",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "mcp-server",
+    "agent-backend",
+    "web"
+  ],
+  "scripts": {
+    "build": "npm run build -w mcp-server && npm run build -w agent-backend",
+    "dev:backend": "npm run dev -w agent-backend",
+    "dev:web": "npm run dev -w web"
+  }
+}
