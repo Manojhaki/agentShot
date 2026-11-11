@@ -8,8 +8,13 @@
     "web"
   ],
   "scripts": {
-    "build": "npm run build -w mcp-server && npm run build -w agent-backend",
+    "build": "npm run build:services && npm run build -w web",
+    "build:services": "npm run build -w mcp-server && npm run build -w agent-backend",
+    "test": "npm run build:services && node --test tests/*.test.mjs",
     "dev:backend": "npm run dev -w agent-backend",
     "dev:web": "npm run dev -w web"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

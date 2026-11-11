@@ -1,24 +1,18 @@
 import { getMcpClient } from "./mcpClient.js";
+import { bindSession, safeReply } from "./policy.js";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const MODEL = process.env.OLLAMA_MODEL || "qwen2.5:7b";
 
-const SYSTEM_PROMPT = `You are the shopping assistant for AgentShot, an ecommerce store.
-You have tools to search the product catalog, recommend products, manage the shopper's
-cart, and check out. Follow these rules strictly:
-1. Never invent product names, ids, prices, stock, or descriptions. Only mention products
-   that were returned by search_products, get_recommendations, or get_cart in this
-   conversation, and only use their exact "id" field as productId in later tool calls.
-2. The current shopper's sessionId is "{{sessionId}}" - pass it as the sessionId argument
-   to any add_to_cart, remove_from_cart, get_cart, or checkout tool call.
-3. Never claim an order was placed, confirmed, or paid for unless you actually called the
-   checkout tool in this conversation and it returned a successful result. If you have not
-   called checkout yet, you have not placed an order.
-4. If a tool call returns an error, do not pretend it succeeded - read the error, fix the
-   arguments (e.g. look up the correct productId via search_products or get_cart), and try
-   again, or tell the user what went wrong.
-Be concise, friendly, and proactive: suggest relevant products when helpful, and confirm
-cart/order details clearly including exact prices and totals from tool results.`;
+const SYSTEM_PROMPT = `You are the shopping assistant for AgentShot, a demo store.
+Use tools for exact product names, IDs, stock, prices, cart contents and saved orders.
+Never invent products or treat tool errors as success. Search before adding an unknown product.
+Use prepare_checkout to prepare a review when given a full shipping address.
+A review does NOT place an order. Tell the shopper to review the cart panel and click
+Confirm demo order. You cannot confirm orders or process payments.
+Use get_shopper_state for current cart and saved order history.
+The shopper session is "{{sessionId}}"; the backend binds tools to this session.
+Be concise and friendly.`;
 
 interface OllamaMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -36,7 +30,7 @@ const conversations = new Map<string, OllamaMessage[]>();
 async function mcpToolsAsOllamaTools(): Promise<OllamaTool[]> {
   const client = await getMcpClient();
   const { tools } = await client.listTools();
-  return tools.map((t) => ({
+  return tools.filter(t => t.name !== "confirm_checkout").map((t) => ({
     type: "function" as const,
     function: {
       name: t.name,
@@ -57,10 +51,11 @@ async function callMcpTool(name: string, args: Record<string, unknown>) {
   return { text: text || JSON.stringify(result), isError: Boolean(result.isError) };
 }
 
-async function ollamaChat(messages: OllamaMessage[], tools: OllamaTool[]) {
+async function ollamaChat(messages: OllamaMessage[], tools: OllamaTool[], signal?: AbortSignal) {
   const res = await fetch(`${OLLAMA_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal: signal ?? AbortSignal.timeout(90_000),
     body: JSON.stringify({ model: MODEL, messages, tools, stream: false }),
   });
   if (!res.ok) {
@@ -76,59 +71,42 @@ async function ollamaChat(messages: OllamaMessage[], tools: OllamaTool[]) {
 
 export interface ChatResult {
   reply: string;
-  toolCalls: { name: string; input: unknown; output: string }[];
+  toolCalls: { name: string; input: unknown; output: string; isError: boolean }[];
 }
 
-// Guards against the model claiming a completed/confirmed order when it never
-// actually invoked the checkout tool - a common small-model hallucination.
-const FABRICATED_CHECKOUT_RE =
-  /order (has been|is|was)\s*(successfully\s*)?(placed|confirmed|complete)|successfully (placed|processed)|processed (the )?(payment|your order)/i;
+const defaultDependencies = { tools: mcpToolsAsOllamaTools, call: callMcpTool, chat: ollamaChat };
 
-function isFabricatedCheckoutClaim(replyText: string, toolCalls: ChatResult["toolCalls"]): boolean {
-  return FABRICATED_CHECKOUT_RE.test(replyText) && !toolCalls.some((tc) => tc.name === "checkout");
-}
-
-export async function runAgentTurn(sessionId: string, userMessage: string): Promise<ChatResult> {
+export async function runAgentTurn(sessionId: string, userMessage: string, dependencies = defaultDependencies): Promise<ChatResult> {
+  const deadline = AbortSignal.timeout(100_000);
   const history = conversations.get(sessionId) ?? [
     { role: "system", content: SYSTEM_PROMPT.replace("{{sessionId}}", sessionId) },
   ];
   history.push({ role: "user", content: userMessage });
 
-  const tools = await mcpToolsAsOllamaTools();
+  const tools = await dependencies.tools();
   const toolCalls: ChatResult["toolCalls"] = [];
 
   // Agent loop: keep calling the local model, executing any requested tool calls
   // via MCP, until it responds with plain text (no more tool_calls).
   for (let iteration = 0; iteration < 8; iteration++) {
-    const message = await ollamaChat(history, tools);
+    deadline.throwIfAborted();
+    const message = await dependencies.chat(history, tools, deadline);
     history.push(message);
 
     if (!message.tool_calls || message.tool_calls.length === 0) {
-      if (isFabricatedCheckoutClaim(message.content, toolCalls) && iteration < 7) {
-        history.push({
-          role: "user",
-          content:
-            "You did not actually call the checkout tool, so no order has been placed. " +
-            "Do not claim an order is complete unless you call checkout and it succeeds. " +
-            "Call the checkout tool now if the shopper wants to complete their purchase " +
-            "(ask for a shipping address first if you don't have one).",
-        });
-        continue;
-      }
       conversations.set(sessionId, history);
-      return { reply: message.content, toolCalls };
+      return { reply: safeReply(message.content), toolCalls };
     }
 
     for (const call of message.tool_calls) {
-      const input = { ...(call.function.arguments as Record<string, unknown>) };
-      if (
-        ["add_to_cart", "remove_from_cart", "get_cart", "checkout"].includes(call.function.name) &&
-        !input.sessionId
-      ) {
-        input.sessionId = sessionId;
-      }
-      const result = await callMcpTool(call.function.name, input);
-      toolCalls.push({ name: call.function.name, input, output: result.text });
+      let input: Record<string, unknown> = {};
+      let result: { text: string; isError: boolean };
+      try {
+        deadline.throwIfAborted();
+        input = bindSession(call.function.name, call.function.arguments, sessionId);
+        result = await dependencies.call(call.function.name, input);
+      } catch (error) { result = { text: (error as Error).message, isError: true }; }
+      toolCalls.push({ name: call.function.name, input, output: result.text, isError: result.isError });
       history.push({ role: "tool", content: result.text });
     }
   }

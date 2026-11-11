@@ -1,6 +1,6 @@
 export const metadata = {
   title: "AgentShot",
-  description: "An agentic ecommerce demo powered by MCP agents",
+  description: "Find your next favorite with a local AI shopping assistant, a saved cart, and reviewed demo checkout.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -4,7 +4,9 @@ import { z } from "zod";
 import {
   addToCart,
   cartSummary,
-  checkout,
+  prepareCheckout,
+  confirmCheckout,
+  shopperState,
   recommendProducts,
   removeFromCart,
   searchProducts,
@@ -128,10 +130,10 @@ server.registerTool(
 );
 
 server.registerTool(
-  "checkout",
+  "prepare_checkout",
   {
-    title: "Checkout",
-    description: "Place an order for everything currently in the cart, given a shipping address. Clears the cart.",
+    title: "Prepare checkout review",
+    description: "Prepare a checkout review. Does NOT place an order. Shopper must click Confirm demo order in the storefront.",
     inputSchema: {
       sessionId: z.string(),
       shippingAddress: z.string().describe("Full shipping address"),
@@ -139,13 +141,25 @@ server.registerTool(
   },
   async ({ sessionId, shippingAddress }) => {
     try {
-      return textResult(checkout(sessionId, shippingAddress));
+      return textResult(prepareCheckout(sessionId, shippingAddress));
     } catch (err) {
       return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
     }
   },
 );
 
+
+server.registerTool("get_shopper_state", {
+  title: "Get cart, review and orders", description: "Get this shopper's cart, pending review and saved orders.",
+  inputSchema: { sessionId: z.string() },
+}, async ({ sessionId }) => textResult(shopperState(sessionId)));
+server.registerTool("confirm_checkout", {
+  title: "Confirm reviewed order", description: "Storefront-only confirmation. Never exposed to the model.",
+  inputSchema: { sessionId: z.string(), reviewId: z.string().uuid() },
+}, async ({ sessionId, reviewId }) => {
+  try { return textResult(confirmCheckout(sessionId, reviewId)); }
+  catch (err) { return { content: [{ type: "text" as const, text: (err as Error).message }], isError: true }; }
+});
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
