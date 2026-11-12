@@ -78,22 +78,16 @@ The viewer is a separate process. If using a custom directory, set AGENTSHOT_TEL
 
 Export failures do not fail shopping operations, and shutdown/flush errors are handled. OTLP uses a bounded batch processor; local file export uses a simple processor. Normal shutdown flushes telemetry; forcibly killing a process can lose its last buffered spans.
 
-## Optional Jaeger / OTLP
+## Optional OTLP export
 
-With Docker installed:
-
-```powershell
-docker compose -f telemetry/compose.yaml up -d
-```
-
-Set:
+To send traces to your own OTLP HTTP/JSON collector, set:
 
 ```dotenv
 AGENTSHOT_OTEL_EXPORTER=both
 OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:4318/v1/traces
 ```
 
-Restart the backend, send a chat message, then visit http://127.0.0.1:16686. Local file traces remain available in both mode. The supplied Jaeger instance uses transient in-memory storage. Remote exporters receive whichever metadata/content you enable; file-only is the default.
+Replace the endpoint with your collector's URL and restart the backend. Local file traces remain available in both mode. Remote exporters receive whichever metadata/content you enable; file-only is the default. No external collector is required for the local trace viewer.
 
 ## Verification
 
@@ -103,4 +97,3 @@ References:
 - [OpenTelemetry JavaScript instrumentation](https://opentelemetry.io/docs/languages/js/instrumentation/)
 - [Ollama thinking](https://docs.ollama.com/capabilities/thinking)
 - [Ollama chat API](https://docs.ollama.com/api/chat)
-- [Jaeger getting started](https://www.jaegertracing.io/docs/2.23/getting-started/)

@@ -78,7 +78,7 @@ The frontend uses NEXT_PUBLIC_API_URL (default http://localhost:4000). Requests 
 
 ## Tracing
 
-OpenTelemetry captures HTTP requests, agent/model turns, MCP tools and store transactions. Run npm.cmd run traces and open http://127.0.0.1:4310 to inspect local traces. Prompt, payload and model-reported thinking content is opt-in. See [the tracing guide](telemetry/README.md) for capture settings, privacy defaults, model support and optional Jaeger/OTLP export.
+OpenTelemetry captures HTTP requests, agent/model turns, MCP tools and store transactions. Run npm.cmd run traces and open http://127.0.0.1:4310 to inspect local traces. Prompt, payload and model-reported thinking content is opt-in. See [the tracing guide](telemetry/README.md) for capture settings, privacy defaults, model support and optional OTLP export.
 
 ## Validation
 
