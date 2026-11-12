@@ -7,6 +7,8 @@ For example: **“Find wireless headphones under $150.”** The model chooses a 
 
 This is a proof of concept: products are fictional, shipping is simulated, tax is a flat 8%, and no real payment is taken.
 
+![AgentShot Trace Search showing a shopping session, recent activities, and a completed order](docs/images/agentshot.png)
+
 ## Project structure
 
 | Folder | What it does |
