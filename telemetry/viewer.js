@@ -1,10 +1,10 @@
-﻿import { barGeometry, flattenSpans, formatDuration, groupTraces, spanCategory } from "/trace-model.mjs";
+﻿import { activityLabel, recentActivities, barGeometry, flattenSpans, formatDuration, groupTraces, spanCategory } from "/trace-model.mjs";
 
 const $ = selector => document.querySelector(selector);
 const state = {
   traces: [], selectedTrace: new URL(location.href).searchParams.get("traceId"),
   selectedSpan: null, tab: "Summary", collapsed: new Set(),
-  chatOnly: true, errorsOnly: false, rawSignature: "", detailSignature: "",
+  chatOnly: false, errorsOnly: false, rawSignature: "", detailSignature: "",
   requestNodes: new Map(), loading: false, inspectorSignature: "", latestUpdate: null,
 };
 const number = value => new Intl.NumberFormat("en-US").format(value);
@@ -44,7 +44,7 @@ function filteredTraces() {
   return state.traces.filter(trace =>
     (!state.chatOnly || trace.spans.some(span => span.name === "agent.turn")) &&
     (!state.errorsOnly || trace.errors.length) &&
-    (!query || trace.spans.some(span => (span.name + " " + span.service + " " + trace.id).toLowerCase().includes(query)))
+    (!query || trace.spans.some(span => (activityLabel(trace) + " " + span.name + " " + span.service + " " + trace.id).toLowerCase().includes(query)))
   );
 }
 function selectTrace(id, focus = false) {
@@ -94,13 +94,27 @@ function renderRequests() {
       button.setAttribute("aria-current", trace.id === state.selectedTrace ? "true" : "false");
       button.setAttribute("aria-label", trace.root.name + ", " + formatDuration(trace.duration) + ", " + trace.spans.length + " spans" + (trace.errors.length ? ", errors recorded" : ""));
       const route = node("span", undefined, "trace-route");
-      route.append(node("span", trace.root.name, "route-text"), node("span", undefined, "trace-dot" + (trace.errors.length ? " error" : "")));
+      route.append(node("span", activityLabel(trace), "route-text"), node("span", undefined, "trace-dot" + (trace.errors.length ? " error" : "")));
       const meta = node("span", undefined, "trace-meta");
       meta.append(node("span", new Date(trace.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })), node("span", formatDuration(trace.duration)));
       button.replaceChildren(route, meta, node("span", trace.id.slice(0, 12) + "… · " + trace.spans.length + " spans", "trace-short-id"));
     }
     if (list.children[index] !== button) list.insertBefore(button, list.children[index] || null);
   });
+}
+function renderActivities() {
+  const buttons = recentActivities(state.traces).map(trace => {
+    const button = node("button", undefined, "activity-button");
+    button.type = "button";
+    button.append(node("strong", activityLabel(trace)), node("span", new Date(trace.start + trace.duration).toLocaleString() + " · " + formatDuration(trace.duration)), node("code", trace.id.slice(0, 12) + "…"));
+    button.onclick = () => {
+      state.chatOnly = false; state.errorsOnly = false; $("#search").value = "";
+      $("#chat-only").setAttribute("aria-pressed", "false"); $("#errors-only").setAttribute("aria-pressed", "false");
+      selectTrace(trace.id); $("#trace-summary").scrollIntoView({ block: "nearest" });
+    };
+    return button;
+  });
+  $("#activity-list").replaceChildren(...(buttons.length ? buttons : [node("p", "Shopping and chat activities will appear here as requests finish.", "empty-state")]));
 }
 async function copyText(value, button) {
   try {
@@ -290,7 +304,7 @@ async function update() {
     if (!response.ok) throw new Error();
     const spans = await response.json(), signature = JSON.stringify(spans);
     if (signature !== state.rawSignature) {
-      state.rawSignature = signature; state.traces = groupTraces(spans);
+      state.rawSignature = signature; state.traces = groupTraces(spans); renderActivities();
       if (currentTrace() && !currentSpan()) selectTrace(state.selectedTrace);
       else if (!currentTrace()) {
         const next = filteredTraces()[0];

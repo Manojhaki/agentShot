@@ -11,6 +11,26 @@ export function spanCategory(span) {
   return "request";
 }
 
+export function activityLabel(trace) {
+  const route = trace.root.attributes?.["http.route"] || trace.root.name.replace(/^[A-Z]+ /, "");
+  const failed = trace.errors.length > 0 || Number(trace.root.attributes?.["http.response.status_code"]) >= 400;
+  const labels = {
+    "/api/checkout/confirm": ["Order completed", "Order submission failed"],
+    "/api/checkout/review": ["Checkout reviewed", "Checkout review failed"],
+    "/api/cart": ["Cart updated", "Cart update failed"],
+    "/api/bundle/preview": ["Hiking bundle previewed", "Bundle preview failed"],
+    "/api/bundle/apply": ["Hiking bundle added", "Bundle addition failed"],
+    "/api/chat": ["Assistant replied", "Assistant request failed"],
+    "/api/chat/reset": ["Chat reset", "Chat reset failed"],
+  };
+  return labels[route]?.[failed ? 1 : 0] || trace.root.name;
+}
+
+export function recentActivities(traces) {
+  return traces.filter(trace => /^POST \/api\//.test(trace.root.name))
+    .sort((a, b) => (b.start + b.duration) - (a.start + a.duration)).slice(0, 8);
+}
+
 export function summarizeTrace(input) {
   const spans = [...new Map(input.map(span => [span.spanId, span])).values()].sort((a, b) => a.startTime - b.startTime);
   if (!spans.length) return null;

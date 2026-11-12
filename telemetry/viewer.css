@@ -173,3 +173,11 @@ button { border: 0; background: transparent; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
 
 @media (max-width: 400px) { .header-section, .brand-divider { display: none; } }
+.recent-activities { margin-bottom: 22px; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: white; }
+.recent-activities h3 { font-size: 14px; margin-bottom: 6px; }
+.recent-activities > p { color: #617681; font-size: 12px; line-height: 1.7; }
+.activity-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 10px; margin-top: 14px; }
+.activity-button { text-align: left; border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 7px; }
+.activity-button:hover { background: #f1f7f5; border-color: #4c8b79; }
+.activity-button strong { font-size: 12px; }
+.activity-button span, .activity-button code { font-size: 10px; color: #617681; }

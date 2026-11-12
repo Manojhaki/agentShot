@@ -1,4 +1,4 @@
-﻿# AgentShot OpenTelemetry
+# AgentShot OpenTelemetry
 
 Tracing is enabled by default using a local file exporter. No collector, Docker installation, API key or remote account is required.
 
@@ -10,7 +10,7 @@ Tracing is enabled by default using a local file exporter. No collector, Docker 
 4. Select a request on the left. The summary shows elapsed time, model calls, token usage and tool count.
 5. Click a waterfall row to inspect Summary, Attributes, Events or captured Content. Bars share one time axis; nested span durations are not added to the request total.
 
-Chat requests are shown by default. Toggle Chat requests off to include other API requests, use Errors only to find failed spans, or search by name, service or trace ID. The selected span and inspector tab stay in place during refresh. Use / to focus search, Escape to clear it, and arrow keys to navigate requests or inspector tabs.
+Trace Search shows all requests by default, including checkout confirmations. Recent activities lists the latest eight shopping and chat requests with links to their traces. Enable Chat only to focus on assistant requests, use Errors only to find failed spans, or search by name, service or trace ID. The selected span and inspector tab stay in place during refresh. Use / to focus search, Escape to clear it, and arrow keys to navigate requests or inspector tabs.
 
 The chat's collapsed **Behind the scenes** panel shows its trace ID. HTTP responses also include X-Trace-Id, and chat/error JSON responses include traceId when tracing is active.
 

@@ -1,8 +1,18 @@
 ﻿import { test } from "node:test";
 import assert from "node:assert/strict";
-import { barGeometry, flattenSpans, summarizeTrace } from "../telemetry/trace-model.mjs";
+import { activityLabel, recentActivities, barGeometry, flattenSpans, summarizeTrace } from "../telemetry/trace-model.mjs";
 const span = (spanId, name, startTime, durationMs, parentSpanId, attributes = {}) => ({
   spanId, name, startTime, durationMs, parentSpanId, traceId: "fixture", service: "backend", status: { code: 0 }, attributes, events: [],
+});
+test("recent activities include completed checkout and failures without background reads", () => {
+  const order = summarizeTrace([span("order", "POST /api/checkout/confirm", 100, 10, undefined, { "http.response.status_code": 200 })]);
+  const failed = summarizeTrace([span("failed", "POST /api/checkout/confirm", 200, 10, undefined, { "http.response.status_code": 409 })]);
+  const read = summarizeTrace([span("read", "GET /api/state", 300, 10)]);
+  assert.equal(activityLabel(order), "Order completed");
+  assert.equal(activityLabel(failed), "Order submission failed");
+  assert.deepEqual(recentActivities([order, read, failed]), [failed, order]);
+  const activities = Array.from({ length: 12 }, (_, i) => ({ ...order, start: i }));
+  assert.equal(recentActivities(activities).length, 8);
 });
 test("trace metrics count model usage and tool calls once across nested service spans", () => {
   const items = [

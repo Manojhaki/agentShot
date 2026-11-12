@@ -1,18 +1,18 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>AgentShot · Trace explorer</title>
+  <title>AgentShot · Trace Search</title>
   <link rel="stylesheet" href="/viewer.css">
   <script type="module" src="/viewer.js"></script>
 </head>
 <body>
   <header class="app-header">
-    <a class="brand" href="/" aria-label="AgentShot trace explorer">
+    <a class="brand" href="/" aria-label="AgentShot Trace Search">
       <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l3-7 4 14 3-7h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <strong>AgentShot</strong><span class="brand-divider"></span><span class="header-section">Observability</span>
+      <strong>AgentShot</strong><span class="brand-divider"></span><span class="header-section">Trace Search</span>
     </a>
     <div class="header-actions"><span class="local-badge">Local environment</span><a class="store-link" href="http://localhost:3001" target="_blank" rel="noopener">Open storefront <span aria-hidden="true">↗</span></a></div>
   </header>
@@ -20,7 +20,7 @@
     <aside class="requests-panel" aria-labelledby="requests-heading">
       <div class="requests-title"><h1 id="requests-heading">Traces</h1><span id="trace-count" class="count-badge">0</span></div>
       <div class="search-field"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg><label class="sr-only" for="search">Search traces</label><input id="search" type="search" placeholder="Search traces…" autocomplete="off"><kbd aria-hidden="true">/</kbd></div>
-      <div class="request-filters" role="group" aria-label="Request filters"><button id="chat-only" class="filter-button" aria-pressed="true">Chat requests</button><button id="errors-only" class="filter-button" aria-pressed="false">Errors only</button></div>
+      <div class="request-filters" role="group" aria-label="Request filters"><button id="chat-only" class="filter-button" aria-pressed="false">Chat only</button><button id="errors-only" class="filter-button" aria-pressed="false">Errors only</button></div>
       <div class="list-caption"><span>RECENT REQUESTS</span><span>NEWEST FIRST</span></div>
       <nav id="trace-list" aria-label="Trace requests"><p class="empty-state">Loading local traces…</p></nav>
       <div class="request-footer"><span class="privacy-dot" aria-hidden="true"></span><span>Stored on this computer</span><a href="/api/spans" target="_blank" rel="noopener" aria-label="Open raw span JSON">JSON ↗</a></div>
@@ -28,7 +28,7 @@
     <main class="workspace">
       <div class="workspace-heading"><div><p class="eyebrow">REQUEST INSPECTOR</p><h2>Follow every step.</h2></div><div class="live-controls"><label class="live-toggle"><input id="auto-refresh" type="checkbox" checked><span class="live-indicator" aria-hidden="true"></span><span id="live-label">Live updates</span></label><button id="refresh-now" class="icon-button" aria-label="Refresh traces" title="Refresh traces"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16 7a6.5 6.5 0 1 0 .3 5M16 3v4h-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
       <p id="connection-status" class="connection-status" role="status" aria-live="off">Connecting to local spans…</p>
-      <div id="trace-summary"></div>
+      <section class="recent-activities" aria-labelledby="activities-heading"><h3 id="activities-heading">Recent activities</h3><p>Latest completed shopping and chat requests. Select an activity to inspect its trace.</p><div id="activity-list" class="activity-list"></div></section><div id="trace-summary"></div>
       <div class="inspection-layout">
         <section class="timeline-panel" aria-labelledby="timeline-heading">
           <div class="panel-heading"><div><h3 id="timeline-heading">Execution timeline</h3><p>Every operation, on the same clock.</p></div><button id="expand-all" class="quiet-button" disabled>Expand all</button></div>
