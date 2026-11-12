@@ -1,4 +1,5 @@
-﻿# AgentShot — AI shopping demo
+
+# AgentShot : AI shopping demo
 
 AgentShot is a local shopping website with an AI assistant. Ask for products, build a cart, and place a demo order. Trace Search shows what happened behind the scenes.
 
