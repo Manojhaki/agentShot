@@ -14,6 +14,12 @@ test("recent activities include completed checkout and failures without backgrou
   const activities = Array.from({ length: 12 }, (_, i) => ({ ...order, start: i }));
   assert.equal(recentActivities(activities).length, 8);
 });
+test("trace summaries preserve journey grouping and leave legacy traces unassigned", () => {
+  const summary = summarizeTrace([span("root", "POST /api/cart", 0, 10, undefined, { "agentshot.journey.id": "shopper-fixture" }), span("tool", "mcp.client add_to_cart", 1, 5, "root")]);
+  assert.equal(summary.journeyId, "shopper-fixture");
+  assert.equal(summary.spans.length, 2);
+  assert.equal(summarizeTrace([span("old", "POST /api/chat", 0, 1)]).journeyId, null);
+});
 test("trace metrics count model usage and tool calls once across nested service spans", () => {
   const items = [
     span("root", "POST /api/chat", 1000, 10000),

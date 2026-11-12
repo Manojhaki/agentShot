@@ -3,6 +3,7 @@
 const $ = selector => document.querySelector(selector);
 const state = {
   traces: [], selectedTrace: new URL(location.href).searchParams.get("traceId"),
+  selectedJourney: new URL(location.href).searchParams.get("session") || "",
   selectedSpan: null, tab: "Summary", collapsed: new Set(),
   chatOnly: false, errorsOnly: false, rawSignature: "", detailSignature: "",
   requestNodes: new Map(), loading: false, inspectorSignature: "", latestUpdate: null,
@@ -42,9 +43,10 @@ function currentSpan() { return currentTrace()?.spans.find(span => span.spanId =
 function filteredTraces() {
   const query = $("#search").value.trim().toLowerCase();
   return state.traces.filter(trace =>
+    (!state.selectedJourney || trace.journeyId === state.selectedJourney) &&
     (!state.chatOnly || trace.spans.some(span => span.name === "agent.turn")) &&
     (!state.errorsOnly || trace.errors.length) &&
-    (!query || trace.spans.some(span => (activityLabel(trace) + " " + span.name + " " + span.service + " " + trace.id).toLowerCase().includes(query)))
+    (!query || trace.spans.some(span => (activityLabel(trace) + " " + span.name + " " + span.service + " " + trace.id + " " + (trace.journeyId || "")).toLowerCase().includes(query)))
   );
 }
 function selectTrace(id, focus = false) {
@@ -56,7 +58,9 @@ function selectTrace(id, focus = false) {
     state.selectedSpan = [...trace.models].sort((a, b) => b.durationMs - a.durationMs)[0]?.spanId || trace.errors[0]?.spanId || trace.root.spanId;
     state.tab = "Summary"; state.collapsed.clear();
   }
-  history.replaceState(null, "", "?traceId=" + id);
+  const params = new URLSearchParams({ traceId: id });
+  if (state.selectedJourney) params.set("session", state.selectedJourney);
+  history.replaceState(null, "", "?" + params);
   state.detailSignature = ""; state.inspectorSignature = "";
   renderRequests(); renderDetail();
   if (focus) state.requestNodes.get(id)?.focus();
@@ -102,8 +106,32 @@ function renderRequests() {
     if (list.children[index] !== button) list.insertBefore(button, list.children[index] || null);
   });
 }
+function renderSessions() {
+  const sessions = new Map();
+  for (const trace of state.traces) if (trace.journeyId) sessions.set(trace.journeyId, (sessions.get(trace.journeyId) || 0) + 1);
+  const options = [new Option("All sessions", "")];
+  if (state.selectedJourney && !sessions.has(state.selectedJourney)) options.push(new Option(state.selectedJourney + " · no retained requests", state.selectedJourney));
+  for (const [id, count] of sessions) options.push(new Option(id.slice(0, 20) + "… · " + count + " requests", id));
+  $("#session-filter").replaceChildren(...options);
+  $("#session-filter").value = state.selectedJourney;
+  $("#session-filter").title = state.selectedJourney || "All shopping sessions";
+  $("#session-note").textContent = state.selectedJourney ? "Showing retained requests for this session. Older traces may have rotated out." : "Select a session to follow its journey. Older traces without a session remain in All sessions.";
+}
+function chooseSession(id) {
+  state.selectedJourney = id; state.chatOnly = false; state.errorsOnly = false;
+  $("#search").value = "";
+  $("#chat-only").setAttribute("aria-pressed", "false"); $("#errors-only").setAttribute("aria-pressed", "false");
+  renderSessions(); renderActivities();
+  const next = filteredTraces()[0];
+  if (next) selectTrace(next.id);
+  else {
+    state.selectedTrace = null; state.selectedSpan = null;
+    history.replaceState(null, "", id ? "?session=" + encodeURIComponent(id) : "/");
+    renderRequests(); renderDetail(); $("#inspector").replaceChildren();
+  }
+}
 function renderActivities() {
-  const buttons = recentActivities(state.traces).map(trace => {
+  const buttons = recentActivities(state.traces.filter(trace => !state.selectedJourney || trace.journeyId === state.selectedJourney)).map(trace => {
     const button = node("button", undefined, "activity-button");
     button.type = "button";
     button.append(node("strong", activityLabel(trace)), node("span", new Date(trace.start + trace.duration).toLocaleString() + " · " + formatDuration(trace.duration)), node("code", trace.id.slice(0, 12) + "…"));
@@ -140,6 +168,12 @@ function renderSummary(trace) {
   id.append(node("span", "Trace ID"), node("code", trace.id));
   const copy = node("button", undefined, "copy-id"); copy.type = "button"; copy.title = "Copy trace ID"; copy.setAttribute("aria-label", "Copy trace ID"); copy.append(icon("copy")); copy.onclick = () => copyText(trace.id, copy);
   id.append(copy, node("span", trace.spans.length + " spans · " + trace.services + " services · " + new Date(trace.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }), "summary-info"));
+  const journey = node("div", undefined, "journey-link");
+  if (trace.journeyId) {
+    const link = node("button", "View this shopping session", "quiet-button");
+    link.onclick = () => chooseSession(trace.journeyId);
+    journey.append(link, node("code", trace.journeyId));
+  } else journey.append(node("span", "Session unavailable for this older trace."));
   const metrics = node("div", undefined, "metrics");
   const values = [
     ["Total duration", formatDuration(trace.duration), "End-to-end request"],
@@ -150,7 +184,7 @@ function renderSummary(trace) {
   for (const [label, value, sub] of values) {
     const metric = node("div", undefined, "metric"); metric.append(node("p", label, "metric-label"), node("p", value, "metric-value"), node("p", sub, "metric-sub")); metrics.append(metric);
   }
-  card.append(heading, id, metrics); $("#trace-summary").replaceChildren(card);
+  card.append(heading, id, journey, metrics); $("#trace-summary").replaceChildren(card);
 }
 function selectSpan(id) {
   state.selectedSpan = id; state.inspectorSignature = "";
@@ -304,7 +338,7 @@ async function update() {
     if (!response.ok) throw new Error();
     const spans = await response.json(), signature = JSON.stringify(spans);
     if (signature !== state.rawSignature) {
-      state.rawSignature = signature; state.traces = groupTraces(spans); renderActivities();
+      state.rawSignature = signature; state.traces = groupTraces(spans); renderSessions(); renderActivities();
       if (currentTrace() && !currentSpan()) selectTrace(state.selectedTrace);
       else if (!currentTrace()) {
         const next = filteredTraces()[0];
@@ -322,6 +356,7 @@ async function update() {
   } finally { state.loading = false; $("#refresh-now").disabled = false; }
 }
 function filterChanged() { renderRequests(); }
+$("#session-filter").onchange = () => chooseSession($("#session-filter").value);
 $("#search").oninput = filterChanged;
 $("#chat-only").onclick = () => { state.chatOnly = !state.chatOnly; $("#chat-only").setAttribute("aria-pressed", String(state.chatOnly)); filterChanged(); };
 $("#errors-only").onclick = () => { state.errorsOnly = !state.errorsOnly; $("#errors-only").setAttribute("aria-pressed", String(state.errorsOnly)); filterChanged(); };

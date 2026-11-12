@@ -1,6 +1,6 @@
 ﻿import cors from "cors";
 import express from "express";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { invokeMcpTool } from "./mcpClient.js";
 import { httpTracing } from "./httpTracing.js";
 import { recordError, trace, traceId } from "@agentshot/telemetry";
@@ -27,6 +27,9 @@ export function createApp(storeCall = callStore, agentTurn = runAgentTurn) {
     const session = cookie && /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(cookie) ? cookie : randomUUID();
     if (session !== cookie) res.cookie("agentshot_session", session, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 365 * 86400_000 });
     res.locals.sessionId = session;
+    // Stable correlation only: never export the cookie that grants shopper access.
+    const journeyId = "shopper-" + createHash("sha256").update("agentshot-journey-v1:" + session).digest("hex");
+    trace.getActiveSpan()?.setAttribute("agentshot.journey.id", journeyId);
     res.setHeader("Cache-Control", "no-store");
     next();
   });

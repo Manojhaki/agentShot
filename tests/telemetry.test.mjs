@@ -88,6 +88,33 @@ test("OpenTelemetry traces actual HTTP, Ollama, MCP stdio and SQLite with opt-in
     for (const value of ["PRIVATE_PROMPT_SENTINEL", "Private Street", "PROVIDER_THINKING_SENTINEL", result.cookie.split("=")[1]]) assert.equal(encoded.includes(value), false);
     assert.ok(agent.events.some(e => e.name === "agent.tool.selected"));
   });
+  await t.test("one journey connects separate cart, review and order traces without exposing cookies", async () => {
+    const first = await fetch(base + "/api/state");
+    const cookie = first.headers.get("set-cookie").split(";")[0];
+    await first.json();
+    const ids = [first.headers.get("x-trace-id")];
+    async function post(path, body) {
+      const response = await fetch(base + path, { method: "POST", headers: { cookie, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      assert.equal(response.status, 200);
+      ids.push(response.headers.get("x-trace-id"));
+      return response.json();
+    }
+    await post("/api/cart", { productId: "p001" });
+    const review = await post("/api/checkout/review", { shippingAddress: "123 Test Street, Boston MA 02110, US" });
+    await post("/api/checkout/confirm", { reviewId: review.reviewId, confirmed: true });
+    const other = await fetch(base + "/api/state"); await other.json();
+    await flushTelemetry();
+    const spans = readSpans(process.env.AGENTSHOT_TELEMETRY_DIR);
+    const roots = ids.map(id => spans.find(span => span.traceId === id && !span.parentSpanId));
+    assert.ok(roots.every(Boolean));
+    const journey = roots[0].attributes["agentshot.journey.id"];
+    assert.match(journey, /^shopper-[a-f0-9]{64}$/);
+    assert.ok(roots.every(span => span.attributes["agentshot.journey.id"] === journey));
+    assert.equal(new Set(ids).size, ids.length);
+    const otherRoot = spans.find(span => span.traceId === other.headers.get("x-trace-id") && !span.parentSpanId);
+    assert.notEqual(otherRoot.attributes["agentshot.journey.id"], journey);
+    assert.equal(JSON.stringify(spans).includes(cookie.split("=")[1]), false);
+  });
   await t.test("provider reasoning is captured only with content opt-in and not exposed in chat replies", async () => {
     process.env.OTEL_CAPTURE_CONTENT = "true";
     process.env.OLLAMA_THINK = "true";

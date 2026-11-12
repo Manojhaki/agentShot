@@ -96,6 +96,23 @@ export interface ChatResult {
 
 const defaultDependencies = { tools: mcpToolsAsOllamaTools, call: callMcpTool, chat: ollamaChat };
 
+function isCartQuestion(message: string): boolean {
+  const text = message.trim().replace(/[’]/g, "'");
+  return /^(?:(?:please|can you|could you)\s+)*(?:(?:what(?:'s| is| are)\s+(?:currently\s+)?in\s+(?:my|the)\s+cart)|(?:(?:show|view|check|list|read|display)\s+(?:me\s+)?(?:the\s+)?(?:(?:items|contents)\s+(?:of|in)\s+)?my\s+cart)|my\s+cart)(?:\s+(?:contents|items|please|right now|now|currently))*[?.!\s]*$/i.test(text);
+}
+
+function cartReply(text: string): string {
+  const cart = JSON.parse(text) as { items: { name: string; quantity: number; lineTotal: number }[]; subtotal: number; tax: number; total: number };
+  if (!Array.isArray(cart.items) || ![cart.subtotal, cart.tax, cart.total].every(Number.isFinite)
+    || cart.items.some(item => typeof item.name !== "string" || !Number.isInteger(item.quantity) || item.quantity < 1 || !Number.isFinite(item.lineTotal))) {
+    throw new Error("Invalid cart response");
+  }
+  if (!cart.items.length) return "Your cart is empty.";
+  const money = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
+  return "Your current cart:\n" + cart.items.map(item => `• ${item.name} × ${item.quantity} — ${money(item.lineTotal)}`).join("\n")
+    + `\n\nSubtotal: ${money(cart.subtotal)}\nDemo tax: ${money(cart.tax)}\nTotal: ${money(cart.total)}`;
+}
+
 export function runAgentTurn(sessionId: string, userMessage: string, dependencies = defaultDependencies): Promise<ChatResult> {
   return inSpan("agent.turn", {
     "gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": "AgentShot shopping assistant",
@@ -114,6 +131,26 @@ async function runAgentTurnInternal(sessionId: string, userMessage: string, depe
     { role: "system", content: SYSTEM_PROMPT.replace("{{sessionId}}", sessionId) },
   ];
   history.push({ role: "user", content: userMessage });
+
+  // Cart reads must use live store data, even when the model skips tools or remembers an old cart.
+  if (isCartQuestion(userMessage)) {
+    const input = bindSession("get_cart", {}, sessionId);
+    trace.getActiveSpan()?.addEvent("agent.tool.selected", { "gen_ai.tool.name": "get_cart", "agent.source": "cart_question" });
+    let result: { text: string; isError: boolean };
+    let reply: string;
+    try {
+      result = await dependencies.call("get_cart", input);
+      reply = result.isError ? "I couldn't read your current cart. Please try again or refresh the store." : cartReply(result.text);
+    } catch {
+      result = { text: "Could not read the current cart.", isError: true };
+      reply = "I couldn't read your current cart. Please try again or refresh the store.";
+    }
+    trace.getActiveSpan()?.addEvent("agent.tool.result", { "gen_ai.tool.name": "get_cart", "tool.is_error": result.isError });
+    if (result.isError && trace.getActiveSpan()) recordError(trace.getActiveSpan()!, new Error("Cart read failed"), "agent.tool_error");
+    history.push({ role: "assistant", content: reply });
+    conversations.set(sessionId, history);
+    return { reply, toolCalls: [{ name: "get_cart", input, output: result.text, isError: result.isError }] };
+  }
 
   const tools = await inSpan("mcp.list_tools", {}, () => dependencies.tools(), SpanKind.CLIENT);
   const toolCalls: ChatResult["toolCalls"] = [];

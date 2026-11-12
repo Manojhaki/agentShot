@@ -21,6 +21,9 @@
       <div class="requests-title"><h1 id="requests-heading">Traces</h1><span id="trace-count" class="count-badge">0</span></div>
       <div class="search-field"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg><label class="sr-only" for="search">Search traces</label><input id="search" type="search" placeholder="Search traces…" autocomplete="off"><kbd aria-hidden="true">/</kbd></div>
       <div class="request-filters" role="group" aria-label="Request filters"><button id="chat-only" class="filter-button" aria-pressed="false">Chat only</button><button id="errors-only" class="filter-button" aria-pressed="false">Errors only</button></div>
+      <label class="session-label" for="session-filter">Shopping session</label>
+      <select id="session-filter" class="session-filter"><option value="">All sessions</option></select>
+      <p id="session-note" class="session-note">Select a session to follow its shopping journey.</p>
       <div class="list-caption"><span>RECENT REQUESTS</span><span>NEWEST FIRST</span></div>
       <nav id="trace-list" aria-label="Trace requests"><p class="empty-state">Loading local traces…</p></nav>
       <div class="request-footer"><span class="privacy-dot" aria-hidden="true"></span><span>Stored on this computer</span><a href="/api/spans" target="_blank" rel="noopener" aria-label="Open raw span JSON">JSON ↗</a></div>

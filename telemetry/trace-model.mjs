@@ -43,7 +43,8 @@ export function summarizeTrace(input) {
   const inputTokens = models.reduce((sum, span) => sum + (Number(span.attributes?.["gen_ai.usage.input_tokens"]) || 0), 0);
   const outputTokens = models.reduce((sum, span) => sum + (Number(span.attributes?.["gen_ai.usage.output_tokens"]) || 0), 0);
   return {
-    id: root.traceId, spans, root, start, duration: Math.max(0, end - start), models,
+    id: root.traceId, journeyId: root.attributes?.["agentshot.journey.id"] || spans.find(span => span.attributes?.["agentshot.journey.id"])?.attributes["agentshot.journey.id"] || null,
+    spans, root, start, duration: Math.max(0, end - start), models,
     inputTokens, outputTokens, hasUsage: models.some(span => span.attributes?.["gen_ai.usage.input_tokens"] !== undefined || span.attributes?.["gen_ai.usage.output_tokens"] !== undefined),
     toolCount: spans.filter(span => span.name.startsWith("mcp.client ")).length,
     errors: spans.filter(span => span.status?.code === 2),

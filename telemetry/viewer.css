@@ -181,3 +181,8 @@ button { border: 0; background: transparent; }
 .activity-button:hover { background: #f1f7f5; border-color: #4c8b79; }
 .activity-button strong { font-size: 12px; }
 .activity-button span, .activity-button code { font-size: 10px; color: #617681; }
+.session-label { display: block; font-size: 11px; margin: 14px 0 7px; }
+.session-filter { width: 100%; padding: 9px; border: 1px solid var(--line); border-radius: 6px; background: white; color: inherit; }
+.session-note { font-size: 10px; line-height: 1.7; color: #617681; margin: 8px 0 14px; }
+.journey-link { padding: 0 18px 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.journey-link code { font-size: 10px; overflow-wrap: anywhere; color: #617681; }

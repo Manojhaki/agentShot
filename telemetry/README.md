@@ -28,7 +28,13 @@ POST /api/chat
 
 W3C traceparent/tracestate are carried in MCP request _meta, so the child MCP process belongs to the same trace. Incoming HTTP W3C context is accepted as well. Database spans describe store operations and transactions, not raw SQL statements. Frontend rendering is not instrumented.
 
-## What “thinking” means
+## Shopping sessions in Trace Search
+
+Each request has its own trace ID. New backend requests also record a stable, hashed shopping journey identifier on their HTTP span. Select **Shopping session**, search the full identifier, or click **View this shopping session** on a trace to see related requests, including chat, cart changes, checkout reviews and order confirmations. Each request still opens its own model, MCP and database timeline.
+
+The identifier is derived from the anonymous shopper cookie, but is not the cookie and cannot be used to access the cart. It persists across backend restarts while the browser keeps that cookie; it is not a login or a timed visit. Clearing cookies starts a new journey. Historical traces without this identifier stay in **All sessions** and cannot be linked retroactively. Only retained traces appear; this view is not a permanent order history.
+
+## Model-reported thinking
 
 Ollama can return message.thinking separately from message.content on a thinking-capable model. AgentShot records its presence and character count by default. It does not synthesize explanations, request private internal reasoning, or infer reasoning steps from latency.
 
